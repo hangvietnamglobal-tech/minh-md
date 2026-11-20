@@ -80,3 +80,7 @@ Money (gold-leaf mosaic), Career (cubist facets), Life Quality (infinity dots), 
 - `src/art-motion/core.js` is an ES-module port of the painting toolkit from
   [huashu-art-motion](https://github.com/alchaincyf/huashu-art-motion) (MIT, see `src/art-motion/LICENSE-huashu-art-motion`).
 - `src/art-motion/scenes.js` holds the eleven original compositions. `index.js` mounts and pauses them (off-screen, hidden tab, page closed), and with reduced motion it draws a single still frame.
+
+### Vision as a story
+
+On every area page the vision is told as a story. It is pinned while you scroll, with one chapter per vision line. Words rise out of a mask one by one, and the key phrases (marked `*like this*` in `content.js`) get a painted highlighter sweep. The living painting beside the text makes a slow camera move for each chapter. The type timing follows huashu-art-motion's TY rules: a slow entrance (~0.45s) and a fast exit (~0.18s).

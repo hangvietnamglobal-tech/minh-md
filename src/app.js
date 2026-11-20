@@ -873,13 +873,69 @@ function drawArea(i){
         <div class="hbs">${habitRows}</div>
         <p class="tnote">Tap a day to tick it. Streaks count days in a row for daily habits, and weeks that hit the target for the rest. The strip is the last 12 weeks.</p></section>
       ${(a.extras||[]).includes("move") ? moveSection() : ""}
-      <section class="as"><p class="kick"><b>##</b> vision</p>${a.vision.map(v => `<p class="vis2">${esc(v)}</p>`).join("")}</section>
+      ${visionStory(a)}
       ${(a.extras||[]).includes("boards") ? boardSection() : ""}
       <section class="as"><p class="kick"><b>##</b> purpose — why it matters</p><div class="pg">${a.purpose.map(([t,d],j) => `<div class="pc2"><i>${["I","II","III","IV","V","VI"][j]||j+1}</i><b>${esc(t)}</b><span>${esc(d)}</span></div>`).join("")}</div></section>
       <section class="as"><p class="kick"><b>##</b> strategy — how</p><ol class="st2">${a.strategy.map(([t,d]) => `<li><b>${esc(t)}</b><span>${esc(d)}</span></li>`).join("")}</ol></section>
       <section class="as"><p class="kick"><b>##</b> goals · 2027</p><div class="gl2">${a.goals.map((g,j) => { const gk = k + ":" + j; return `<button class="${DB.goal[gk]?"on":""}" data-g="${gk}"><i>${DB.goal[gk]?"✓":""}</i><span>${esc(g)}</span></button>`; }).join("")}</div>
         ${a.quote ? `<blockquote>${esc(a.quote)}</blockquote>` : ""}</section>
-    </div>`;  const st = mountPainting($("#ain .ahd"), k); $("#aStyle").textContent = st ? "living painting · " + st : "";
+    </div>`;  stopPainting(); const hp = mountPainting($("#ain .ahd"), k); $("#aStyle").textContent = hp ? "living painting · " + hp.style : "";
+  storyInit(k);
+}
+/* ---- Vision as a story: one chapter per vision line, pinned while you scroll.
+   Type rules after huashu-art-motion's TY kit: words rise out of a mask one by one (enter slow ~.45s),
+   key phrases get a painted highlighter sweep, the old line leaves fast (~.18s), and the living
+   painting beside it makes a slow camera move per chapter — punctuation, not decoration. ---- */
+const vwords = v => { let key = false;
+  return esc(v).split(/(\*)/).map(seg => { if(seg === "*"){ key = !key; return ""; }
+    const ws = seg.split(/(\s+)/).map(w => w.trim() ? `<span class="w"><span>${w}</span></span>` : w).join("");
+    return key ? `<span class="k">${ws}</span>` : ws; }).join(""); };
+const CAM = [[1.1, 0, 0], [1.3, -8, 4], [1.22, 6, -5], [1.4, -5, -9], [1.2, 7, 5], [1.3, 0, 7]];   // |shift| stays inside the zoom, no edge shows
+const lum = h => { const n = parseInt(h.slice(1), 16); return ((n >> 16 & 255) * .299 + (n >> 8 & 255) * .587 + (n & 255) * .114) / 255; };
+function visionStory(a){
+  const n = a.vision.length, L = lum(a.color), fl = a.floor || "#fc4109";
+  const hl = L < .35 ? (lum(fl) > .5 ? fl : "#f8d867") : a.color;                 // highlighter: a light, readable wash
+  const ink = L > .62 ? (lum(fl) < .6 ? fl : "#201e1f") : a.color;               // numerals + progress: dark enough on paper
+  return `<section class="vst" style="--n:${n};--c:${ink};--hlc:color-mix(in srgb, ${hl} 62%, transparent)" aria-label="Vision">
+    <div class="vstage">
+      <div class="vtext">
+        <p class="kick"><b>##</b> vision · a story in ${n} chapters</p>
+        <div class="vchs">${a.vision.map((v,j) => `<article class="vch${reduce ? " on" : ""}" data-j="${j}"><span class="vnum">${roman[j]}<em>/ ${roman[n-1]}</em></span><p class="vline">${vwords(v)}</p></article>`).join("")}</div>
+        <div class="vprog">${a.vision.map((_,j) => `<button data-vj="${j}" aria-label="Chapter ${j+1}"></button>`).join("")}<span class="vcount">01 / ${String(n).padStart(2,"0")}</span></div>
+      </div>
+      <div class="vpaint"><div class="vcam"></div><p class="vcap"></p></div>
+    </div>
+    <div class="vsteps">${a.vision.map((_,j) => `<div class="vstep" data-j="${j}"></div>`).join("")}</div>
+  </section>`;
+}
+let VJ = -1, vio = null;
+function storyChapter(j, instant){
+  const root = $("#ain .vst"); if(!root || j === VJ) return;
+  const chs = root.querySelectorAll(".vch"), prev = chs[VJ], cur = chs[j]; VJ = j;
+  root.querySelectorAll(".vprog button").forEach((b,k) => b.classList.toggle("on", k <= j));
+  root.querySelector(".vcount").textContent = `${String(j+1).padStart(2,"0")} / ${String(chs.length).padStart(2,"0")}`;
+  const [sc, x, y] = CAM[j % CAM.length], cam = root.querySelector(".vcam");
+  cam.style.transform = `scale(${sc}) translate(${x}%, ${y}%)`;
+  if(reduce || instant){ chs.forEach(c => c.classList.toggle("on", c === cur)); return; }
+  if(prev){ gsap.to(prev, {opacity:0, y:-24, duration:.18, ease:"power2.in", onComplete:() => prev.classList.remove("on")}); }
+  gsap.killTweensOf(cur); cur.classList.add("on"); gsap.set(cur, {opacity:1, y:0});
+  const ws = cur.querySelectorAll(".w > span"), ks = cur.querySelectorAll(".k");
+  gsap.fromTo(cur.querySelector(".vnum"), {opacity:0, y:30, scale:.7}, {opacity:1, y:0, scale:1, duration:.6, ease:"springOut", delay:.12});
+  gsap.fromTo(ws, {yPercent:110, rotate:4}, {yPercent:0, rotate:0, duration:.48, ease:"power3.out", stagger:.032, delay:.16});
+  gsap.fromTo(ks, {"--hl":"0%"}, {"--hl":"100%", duration:.42, ease:"power2.inOut", stagger:.07, delay:.3 + ws.length * .032});
+}
+function storyInit(k){
+  vio && vio.disconnect(); VJ = -1;
+  const root = $("#ain .vst"); if(!root) return;
+  const hp = mountPainting(root.querySelector(".vcam"), k, {budget:300000, cls:"vcv"});
+  root.querySelector(".vcap").textContent = hp ? hp.style : "";
+  storyChapter(0, true); if(reduce) return;
+  VJ = -1;                       // let chapter I play its entrance when the story scrolls into view
+  vio = new IntersectionObserver(es => es.forEach(e => { if(e.isIntersecting) storyChapter(+e.target.dataset.j); }), {root:$("#area"), rootMargin:"-45% 0px -45% 0px"});
+  root.querySelectorAll(".vstep").forEach(s => vio.observe(s));
+  root.querySelector(".vprog").addEventListener("click", e => { const b = e.target.closest("[data-vj]"); if(!b) return;
+    const st = root.querySelectorAll(".vstep")[+b.dataset.vj], ar = $("#area");
+    ar.scrollTo({top: ar.scrollTop + st.getBoundingClientRect().top - innerHeight * .3, behavior:"smooth"}); });
 }
 /* ---- Health extras: the 2027 movement tracker and the three vision boards ---- */
 DB.move = DB.move || {}; DB.vb = DB.vb || {};
