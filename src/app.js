@@ -7,6 +7,7 @@ import Lenis from "lenis";
 import { EN } from "./content.js";
 import { ART, DEFS, PLANT } from "./art.js";
 import { mountPainting, stopPainting } from "./art-motion/index.js";
+import { mountGhibli } from "./art-motion/ghibli.js";
 gsap.registerPlugin(ScrollTrigger, CustomEase);
 
 /* =========================================================
@@ -908,13 +909,16 @@ function visionStory(a){
     <div class="vsteps">${a.vision.map((_,j) => `<div class="vstep" data-j="${j}"></div>`).join("")}</div>
   </section>`;
 }
-let VJ = -1, vio = null;
+let VJ = -1, vio = null, GH = null;
+const STORY_ANIME = {health: true};     // these areas tell their vision as hand-painted anime landscapes, one per chapter
+const CAM_SOFT = [[1.04, 0, 0], [1.08, -2, 1], [1.06, 2, -1], [1.1, -1, -2], [1.05, 2, 1], [1.08, 0, 2]];
 function storyChapter(j, instant){
   const root = $("#ain .vst"); if(!root || j === VJ) return;
   const chs = root.querySelectorAll(".vch"), prev = chs[VJ], cur = chs[j]; VJ = j;
   root.querySelectorAll(".vprog button").forEach((b,k) => b.classList.toggle("on", k <= j));
   root.querySelector(".vcount").textContent = `${String(j+1).padStart(2,"0")} / ${String(chs.length).padStart(2,"0")}`;
-  const [sc, x, y] = CAM[j % CAM.length], cam = root.querySelector(".vcam");
+  GH && GH.chapter(j);
+  const [sc, x, y] = (GH ? CAM_SOFT : CAM)[j % CAM.length], cam = root.querySelector(".vcam");
   cam.style.transform = `scale(${sc}) translate(${x}%, ${y}%)`;
   if(reduce || instant){ chs.forEach(c => c.classList.toggle("on", c === cur)); return; }
   if(prev){ gsap.to(prev, {opacity:0, y:-24, duration:.18, ease:"power2.in", onComplete:() => prev.classList.remove("on")}); }
@@ -927,7 +931,9 @@ function storyChapter(j, instant){
 function storyInit(k){
   vio && vio.disconnect(); VJ = -1;
   const root = $("#ain .vst"); if(!root) return;
-  const hp = mountPainting(root.querySelector(".vcam"), k, {budget:300000, cls:"vcv"});
+  GH && GH.stop(); GH = null;
+  const hp = STORY_ANIME[k] ? (GH = mountGhibli(root.querySelector(".vcam"))) : mountPainting(root.querySelector(".vcam"), k, {budget:300000, cls:"vcv"});
+  root.classList.toggle("anime", !!GH);
   root.querySelector(".vcap").textContent = hp ? hp.style : "";
   storyChapter(0, true); if(reduce) return;
   VJ = -1;                       // let chapter I play its entrance when the story scrolls into view
@@ -975,7 +981,7 @@ vbFile.onchange = () => { const f = vbFile.files[0]; if(!f || !vbSlot) return; c
     const [b, k] = vbSlot; (DB.vb[b] = DB.vb[b] || [])[k] = cv.toDataURL("image/jpeg", .78); LS.set(DB); URL.revokeObjectURL(img.src); vbFile.value = ""; drawArea(AREA); };
   img.src = URL.createObjectURL(f); };
 function area(i, from){
-  if(i < 0){ if(AREA < 0) return; stopPainting(); document.body.classList.remove("area-open"); AREA = -1; if(location.hash.startsWith("#/")) history.replaceState(null, "", location.pathname + location.search); lenis && lenis.start(); return; }
+  if(i < 0){ if(AREA < 0) return; stopPainting(); GH && GH.stop(); GH = null; document.body.classList.remove("area-open"); AREA = -1; if(location.hash.startsWith("#/")) history.replaceState(null, "", location.pathname + location.search); lenis && lenis.start(); return; }
   i = (i + A.length) % A.length; AREA = i; watch(false); openIndex(false); reading(false); today(false); lenis && lenis.stop();
   drawArea(i); document.body.classList.add("area-open"); $("#area").scrollTop = 0;
   if(location.hash !== "#/" + slug(A[i].name)) history.replaceState(null, "", "#/" + slug(A[i].name));
