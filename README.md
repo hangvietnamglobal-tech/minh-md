@@ -54,6 +54,14 @@ npm run preview   # serve dist/ locally
 - **One sentence, one picture.** Every line is acted out literally.
 - **The red dot is a character** — the logo's period hops through every scene.
 
+### Area pages — vision, purpose, strategy, goals and habits
+
+Click any life area (in the index, or the **open Health ↗** pill while you stand in a room) — or go straight to
+`#/health`, `#/money`, `#/love` … Each page shows the area's vision, purpose, strategy and 2027 goals,
+and the **habits that get me there**: tick each day, watch the weekly target bar, the streak, a 12-week strip,
+and a ring with this week's score. Habits are defined in `src/content.js` as `[name, times per week]`.
+← / → move between areas, Esc closes.
+
 ### today — the daily page
 
 Seven daily things for the week, mood tonight, sleep last night, and two year-long trackers.

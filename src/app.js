@@ -668,6 +668,7 @@ if(FLICK){
 /* ---------- time-driven HUD: crumb, dark mode, character pose ---------- */
 let lastCrumb = "", lastPose = "";
 function onTime(t){
+  if(typeof syncAreaPill === "function") syncAreaPill(t);
   let c = CRUMB[0]; for(const k of CRUMB) if(t >= k[0]) c = k;
   if(c[1] !== lastCrumb){ lastCrumb = c[1]; scramble($("#crumb"), c[1], .7, t => `<span>##</span> ${esc(t)}`); }
   document.body.classList.toggle("dark", !!c[2]);
@@ -747,7 +748,7 @@ const CARDS = [
   {g:"?", t:"what this file is", time:9, art:"compass", bg:"#ffabc8"},
   {g:"♡", t:"heart · body · mind", time:16.6, art:"heart", bg:"#004edf"},
   {g:"7", t:"seven things, every day", time:25.6, art:"notepad", bg:"#e83729"},
-  ...A.map((a,i) => ({g:String(i+1), t:`${a.name} · ${a.arcana.split(" · ")[1]}`, time:AS[i] + 1.9, art:a.prop, tarot:a.tarot, bg:a.color})).flatMap((c,i) => i === PAUSE_AFTER ? [c, {g:"∴", t:"the pause", time:T_PAUSE + 3.6, art:"lotus", bg:"#f4efe8"}]
+  ...A.map((a,i) => ({g:String(i+1), t:`${a.name} · ${a.arcana.split(" · ")[1]}`, area:i, time:AS[i] + 1.9, art:a.prop, tarot:a.tarot, bg:a.color})).flatMap((c,i) => i === PAUSE_AFTER ? [c, {g:"∴", t:"the pause", time:T_PAUSE + 3.6, art:"lotus", bg:"#f4efe8"}]
     : i === IX("Money") ? [c, {g:"VI", t:"what attracts money", time:T_SIX + 7, art:"coins", bg:"#f8d867"}]
     : i === IX("Energy") ? [c, {g:"200", t:"the scale · 20 → 1000", time:T_SCALE + 3.2, art:"energy", bg:"#0d1430"}] : [c]),
   {g:"◎", t:"the wheel of life", time:T_WHEEL + 5, wheel:true, bg:"#f4efe8"},
@@ -768,7 +769,7 @@ function openIndex(on){
 }
 $("#pill").onclick = () => openIndex(!document.body.classList.contains("index-open"));
 $("#cards").onclick = e => { const b = e.target.closest(".card"); if(!b) return; const c = CARDS[+b.dataset.i];
-  openIndex(false); if(c.today) return today(true); if(c.md) return reading(true); go(c.time, true); };
+  openIndex(false); if(c.area != null) return area(c.area); if(c.today) return today(true); if(c.md) return reading(true); go(c.time, true); };
 $("#mug").onclick = $("#brand").onclick = () => { openIndex(false); reading(false); go(0, true); };
 
 /* ---------- reading mode: the plain .md ---------- */
@@ -788,7 +789,14 @@ let DB = LS.get(); DB.hab = DB.hab || {}; DB.mood = DB.mood || {}; DB.sleep = DB
 const iso = d => `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
 const MON = ["J","F","M","A","M","J","J","A","S","O","N","D"], DOW = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 function weekDays(){ const d = new Date(), wd = (d.getDay() + 6) % 7; return DOW.map((_,k) => { const x = new Date(d); x.setDate(d.getDate() - wd + k); return x; }); }
+function drawAreaToday(){
+  const now = new Date(), key = iso(now);
+  $("#areaToday").innerHTML = A.map((a,i) => { const k = slug(a.name);
+    return `<div class="atd"><button class="atn" data-a="${i}" style="--c:${a.color}"><i></i>${esc(a.name)} <span>${areaScore(i)}%</span></button>${a.habits.map(([n,per],h) =>
+      `<button class="ath ${ticks(k,h)[key]?"on":""}" data-k="${k}" data-h="${h}"><i>${ticks(k,h)[key]?"✓":""}</i>${esc(n)}${per<7?` <em>${Math.min(per,weekCount(k,h,now))}/${per} this week</em>`:""}</button>`).join("")}</div>`; }).join("");
+}
 function drawToday(){
+  drawAreaToday();
   const now = new Date(), key = iso(now), wk = weekDays(), wdNow = (now.getDay() + 6) % 7;
   $("#tdate").textContent = now.toLocaleDateString("en-GB", {weekday:"long", day:"numeric", month:"long", year:"numeric"});
   $("#hab").innerHTML = `<tr><th></th>${DOW.map((d,k) => `<th class="${k===wdNow?"now":""}">${d}</th>`).join("")}</tr>` +
@@ -807,6 +815,116 @@ $("#moodKeys").onclick = e => { const b = e.target.closest("button"); if(!b) ret
 $("#sleepKeys").onclick = e => { const b = e.target.closest("button"); if(!b) return; DB.sleep[iso(new Date())] = +b.dataset.k; LS.set(DB); drawToday(); };
 function today(on){ document.body.classList.toggle("today-open", on); if(on){ watch(false); lenis && lenis.stop(); drawToday(); $("#today").scrollTop = 0; } else lenis && lenis.start(); }
 $("#todayClose").onclick = () => today(false);
+/* =========================================================
+   AREA PAGES — click a life area: vision, purpose, strategy, goals, and the habits that get me there.
+   Habits live in content.js as [name, times per week]. Ticks are stored per day:
+   DB.ah[areaKey][habitIndex][YYYY-MM-DD] = 1. Deep links: #/health, #/money …
+   ========================================================= */
+DB.ah = DB.ah || {}; DB.goal = DB.goal || {};
+const slug = n => n.toLowerCase().replace(/[^a-z]+/g, "-");
+const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+const monday = d => addDays(d, -((d.getDay() + 6) % 7));
+const ticks = (k, h) => ((DB.ah[k] = DB.ah[k] || {})[h] = DB.ah[k][h] || {});
+const weekCount = (k, h, ref) => { const m = monday(ref); let n = 0; for(let i=0;i<7;i++) if(ticks(k,h)[iso(addDays(m,i))]) n++; return n; };
+function streak(k, h, per){       // daily habits: days in a row · weekly habits: weeks in a row that hit the target
+  const now = new Date(); let n = 0;
+  if(per >= 7){ let d = ticks(k,h)[iso(now)] ? now : addDays(now, -1); while(ticks(k,h)[iso(d)]){ n++; d = addDays(d, -1); } return [n, n === 1 ? "day" : "days"]; }
+  let w = monday(now); if(weekCount(k,h,w) < per) w = addDays(w, -7);
+  while(weekCount(k,h,w) >= per){ n++; w = addDays(w, -7); } return [n, n === 1 ? "week" : "weeks"];
+}
+function areaScore(i){            // this week's share of targets met, 0–100
+  const a = A[i], k = slug(a.name); let got = 0, want = 0;
+  a.habits.forEach(([_, per], h) => { got += Math.min(per, weekCount(k, h, new Date())); want += per; });
+  return want ? Math.round(100*got/want) : 0;
+}
+document.body.insertAdjacentHTML("beforeend", `<section class="area" id="area" aria-label="Life area" data-lenis-prevent><div class="ain" id="ain"></div></section>
+  <button class="pill openArea" id="openArea" aria-label="Open this area"><span></span> ↗</button>`);
+let AREA = -1;
+const ring = (pct, col) => { const r = 42, c = 2*Math.PI*r; return `<svg class="ring" viewBox="0 0 100 100"><circle cx="50" cy="50" r="${r}" fill="none" stroke="rgba(0,0,0,.08)" stroke-width="9"/>
+  <circle class="rg" cx="50" cy="50" r="${r}" fill="none" stroke="${col}" stroke-width="9" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c*(1-pct/100)}" transform="rotate(-90 50 50)"/>
+  <text x="50" y="57" text-anchor="middle">${pct}%</text></svg>`; };
+function drawArea(i){
+  const a = A[i], k = slug(a.name), now = new Date(), m = monday(now), wdNow = (now.getDay() + 6) % 7, dark = !!a.dark;
+  const days = DOW.map((_, j) => addDays(m, j));
+  const habitRows = a.habits.map(([name, per], h) => {
+    const c = weekCount(k, h, now), [sn, su] = streak(k, h, per);
+    let heat = ""; const start = addDays(m, -77);
+    for(let d=0; d<84; d++){ const x = addDays(start, d); heat += `<i class="${ticks(k,h)[iso(x)]?"on":""} ${iso(x)===iso(now)?"t":""} ${x>now?"f":""}"></i>`; }
+    return `<div class="hb" data-h="${h}">
+      <div class="hn"><b>${esc(name)}</b><span>${per >= 7 ? "every day" : per + "× a week"}</span></div>
+      <div class="hd">${days.map((d,j) => `<button data-d="${iso(d)}" class="${ticks(k,h)[iso(d)]?"on":""} ${j===wdNow?"now":""}" ${d>now?"disabled":""} aria-label="${esc(name)} ${DOW[j]}"><em>${DOW[j][0]}</em></button>`).join("")}</div>
+      <div class="hp"><div class="bar"><i style="width:${Math.min(100, 100*c/per)}%"></i></div><span>${Math.min(c,per)}/${per}${c >= per ? " ✓" : ""}</span></div>
+      <div class="hs"><b>${sn}</b> ${su}</div>
+      <div class="heat" title="last 12 weeks">${heat}</div>
+    </div>`; }).join("");
+  $("#ain").innerHTML = `
+    <header class="ahd" style="background:${a.color};color:${dark?"#f4efe8":"#201e1f"}">
+      <div class="atop"><button class="pill" id="aPrev" aria-label="Previous area">←</button><button class="pill" id="aNext" aria-label="Next area">→</button>
+        <span class="sp"></span><button class="pill" id="aPlay">▶ play the scene</button><button class="pill close" id="aClose">close ✕</button></div>
+      <div class="ahg"><div>
+        <p class="kick"><b>##</b> ${i+1} / ${A.length} · ${esc(a.arcana)}</p>
+        <h2>${esc(a.name)}</h2><p class="ess">${esc(a.essence)}</p><p class="atag">${esc(a.tag)}</p></div>
+        <div class="aart"><img class="atar" alt="" src="${a.tarot}">${a.propImg ? `<img class="aprop" alt="" src="${a.propImg}">` : ""}</div></div>
+    </header>
+    <div class="abody">
+      <section class="as"><div class="ash"><p class="kick"><b>##</b> the habits that get me there</p>
+        <div class="score">${ring(areaScore(i), /^#f4|^#f8|^#ff/i.test(a.color) ? "#fc4109" : a.color)}<p>of this week's targets<br><b>week of ${m.toLocaleDateString("en-GB",{day:"numeric",month:"short"})}</b></p></div></div>
+        <div class="hbs">${habitRows}</div>
+        <p class="tnote">Tap a day to tick it. Streaks count days in a row for daily habits, and weeks that hit the target for the rest. The strip is the last 12 weeks.</p></section>
+      <section class="as"><p class="kick"><b>##</b> vision</p>${a.vision.map(v => `<p class="vis2">${esc(v)}</p>`).join("")}</section>
+      <section class="as"><p class="kick"><b>##</b> purpose — why it matters</p><div class="pg">${a.purpose.map(([t,d],j) => `<div class="pc2"><i>${["I","II","III","IV","V","VI"][j]||j+1}</i><b>${esc(t)}</b><span>${esc(d)}</span></div>`).join("")}</div></section>
+      <section class="as"><p class="kick"><b>##</b> strategy — how</p><ol class="st2">${a.strategy.map(([t,d]) => `<li><b>${esc(t)}</b><span>${esc(d)}</span></li>`).join("")}</ol></section>
+      <section class="as"><p class="kick"><b>##</b> goals · 2027</p><div class="gl2">${a.goals.map((g,j) => { const gk = k + ":" + j; return `<button class="${DB.goal[gk]?"on":""}" data-g="${gk}"><i>${DB.goal[gk]?"✓":""}</i><span>${esc(g)}</span></button>`; }).join("")}</div>
+        ${a.quote ? `<blockquote>${esc(a.quote)}</blockquote>` : ""}</section>
+    </div>`;
+}
+function area(i, from){
+  if(i < 0){ if(AREA < 0) return; document.body.classList.remove("area-open"); AREA = -1; if(location.hash.startsWith("#/")) history.replaceState(null, "", location.pathname + location.search); lenis && lenis.start(); return; }
+  i = (i + A.length) % A.length; AREA = i; watch(false); openIndex(false); reading(false); today(false); lenis && lenis.stop();
+  drawArea(i); document.body.classList.add("area-open"); $("#area").scrollTop = 0;
+  if(location.hash !== "#/" + slug(A[i].name)) history.replaceState(null, "", "#/" + slug(A[i].name));
+  if(!reduce){
+    gsap.fromTo("#area", {y:from === "side" ? 0 : 40, opacity:0}, {y:0, opacity:1, duration:.5, ease:"power3.out"});
+    gsap.from("#ain .ahd h2, #ain .ess, #ain .atag", {y:30, opacity:0, duration:.7, stagger:.07, ease:"spring", delay:.08});
+    gsap.from("#ain .aart img", {y:60, rotation:k => k ? 8 : -6, opacity:0, duration:.9, stagger:.1, ease:"springOut", delay:.12});
+    gsap.from("#ain .hb", {y:24, opacity:0, duration:.5, stagger:.06, ease:"power3.out", delay:.25});
+    gsap.from("#ain .ring .rg", {strokeDashoffset:2*Math.PI*42, duration:1.2, ease:"power3.out", delay:.3});
+  }
+}
+$("#area").addEventListener("click", e => {
+  const t = e.target;
+  if(t.closest("#aClose")) return area(-1);
+  if(t.closest("#aPrev")) return area(AREA - 1, "side");
+  if(t.closest("#aNext")) return area(AREA + 1, "side");
+  if(t.closest("#aPlay")){ const i = AREA; area(-1); return go(AS[i] + 1.9, true); }
+  const g = t.closest("[data-g]"); if(g){ DB.goal[g.dataset.g] = !DB.goal[g.dataset.g]; LS.set(DB); drawArea(AREA); return; }
+  const d = t.closest(".hd button"); if(d && !d.disabled){
+    const k = slug(A[AREA].name), h = +d.closest(".hb").dataset.h, tk = ticks(k, h), was = !!tk[d.dataset.d];
+    if(was) delete tk[d.dataset.d]; else tk[d.dataset.d] = 1; LS.set(DB);
+    const per = A[AREA].habits[h][1], hit = weekCount(k, h, new Date()) >= per;
+    drawArea(AREA);
+    const nb = $(`#ain .hb[data-h="${h}"] .hd button[data-d="${d.dataset.d}"]`);
+    if(nb && !was && !reduce){ gsap.fromTo(nb, {scale:.6}, {scale:1, duration:.5, ease:"bouncy"});
+      if(hit) gsap.fromTo($(`#ain .hb[data-h="${h}"] .hp span`), {scale:1.7}, {scale:1, duration:.7, ease:"bouncy"}); }
+  }
+});
+addEventListener("keydown", e => { if(AREA < 0) return; if(e.key === "Escape") area(-1); if(e.key === "ArrowRight") area(AREA + 1, "side"); if(e.key === "ArrowLeft") area(AREA - 1, "side"); });
+function fromHash(){ const m = location.hash.match(/^#\/([a-z-]+)/); if(!m) return; const i = A.findIndex(a => slug(a.name) === m[1]); if(i >= 0) area(i); }
+addEventListener("hashchange", fromHash);
+// a pill in the HUD that opens the room you are standing in
+let pillArea = -2;
+function areaAt(t){ let ai = -1; AS.forEach((s,k) => { if(t + .15 >= s && t < s + D - .6) ai = k; }); return ai; }
+function syncAreaPill(t){
+  const ai = areaAt(t); if(ai === pillArea) return; pillArea = ai;
+  const b = $("#openArea"); if(ai < 0) return b.classList.remove("on");
+  b.querySelector("span").textContent = "open " + A[ai].name; b.classList.add("on"); b.onclick = () => area(ai);
+}
+// "today" lists every area's habits for today
+$("#areaToday").addEventListener("click", e => {
+  const n = e.target.closest(".atn"); if(n) return area(+n.dataset.a);
+  const b = e.target.closest(".ath"); if(!b) return;
+  const tk = ticks(b.dataset.k, +b.dataset.h), key = iso(new Date()); if(tk[key]) delete tk[key]; else tk[key] = 1; LS.set(DB); drawAreaToday();
+});
 function reading(on){ document.body.classList.toggle("reading", on); if(on){ watch(false); lenis && lenis.stop(); $("#md").scrollTop = 0; } else lenis && lenis.start(); }
 $("#readClose").onclick = () => reading(false);
 $("#skipLink").onclick = e => { e.preventDefault(); reading(true); };
@@ -835,7 +953,7 @@ function startIntro(){
       gsap.to("#loader", {yPercent:-100, duration:.9, ease:"expo.inOut", onComplete:() => $("#loader").remove()});
       document.body.classList.remove("is-loading"); ScrollTrigger.refresh();
       { const h = dotHome(); gsap.set("#dot", {left:h.x, top:h.y}); }
-      startIntro(); }); }
+      startIntro(); fromHash(); }); }
   setTimeout(finish, 4500);
 })();
 /* gentle idle life: breathing character + floating props */
