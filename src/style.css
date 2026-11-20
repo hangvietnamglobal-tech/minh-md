@@ -389,9 +389,46 @@ body.area-open .area{display:block}
 .vcv{position:absolute;inset:0;width:100%;height:100%;display:block}
 .vcap{position:absolute;left:18px;bottom:14px;margin:0;font-family:var(--f-m);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#fff;background:rgba(20,18,18,.45);padding:5px 10px;border-radius:20px}
 .vis2{font-family:var(--f-s);font-size:clamp(22px,2.2vw,34px);line-height:1.22;margin:0 0 16px;max-width:36ch}
-.pg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
-.pc2{background:#fff;border-radius:16px;padding:18px}.pc2 i{font-family:var(--f-s);color:var(--accent);font-size:28px;display:block;line-height:1}
+.pg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;perspective:1100px}
+.pc2{--rx:0deg;--ry:0deg;--sx:50%;position:relative;background:#fff;border-radius:16px;padding:18px;overflow:hidden;transform:rotateX(var(--rx)) rotateY(var(--ry));transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s;cursor:default;outline:none}
+.pc2:hover,.pc2:focus-visible{box-shadow:0 22px 40px -26px rgba(60,40,0,.55)}
+.pc2 .pcx{position:relative;z-index:2}
+.pc2 i{font-family:var(--f-s);color:var(--accent);font-size:28px;display:block;line-height:1}
 .pc2 b{display:block;font-weight:600;margin:6px 0 6px;font-size:17px}.pc2 span{font-size:14px;line-height:1.45;opacity:.85}
+.pc2 b .w{display:inline-block;overflow:hidden;font-size:inherit;opacity:1;vertical-align:top;padding-bottom:.1em;margin-bottom:-.1em}.pc2 b .w>span{display:inline-block;font-size:inherit;opacity:1}
+.pc2 .shine{position:absolute;inset:0;z-index:3;pointer-events:none;background:radial-gradient(420px circle at var(--sx) 0%,rgba(255,255,255,.55),transparent 45%);opacity:0;transition:opacity .3s}
+.pc2:hover .shine{opacity:1}
+.pc2::before{content:"";position:absolute;right:-18px;bottom:-40px;width:180px;height:180px;border-radius:50%;background:var(--c);opacity:.18;z-index:0}
+/* Minh on the card */
+.pc2.fig{min-height:190px;padding-right:44%}
+.pfig{position:absolute;right:0;bottom:0;width:42%;height:100%;z-index:1;pointer-events:none}
+.pfig img{position:absolute;left:50%;bottom:-38%;height:132%;transform:translateX(-50%);transform-origin:50% 100%;animation:pbob 3.2s ease-in-out infinite;animation-delay:calc(var(--i) * -.8s)}
+.pfig img.hop{animation:phop .7s cubic-bezier(.3,1.6,.5,1) 1,pbob 3.2s ease-in-out .7s infinite}
+@keyframes pbob{0%,100%{transform:translateX(-50%) scaleY(1) rotate(0)}50%{transform:translateX(-50%) scaleY(1.018) rotate(-1deg)}}
+@keyframes phop{0%{transform:translateX(-50%) translateY(0) scale(1.06,.92)}40%{transform:translateX(-50%) translateY(-14%) scale(.96,1.06)}75%{transform:translateX(-50%) translateY(0) scale(1.05,.95)}100%{transform:translateX(-50%) translateY(0) scale(1)}}
+.pfx{position:absolute;inset:0;pointer-events:none}
+.pfx i{position:absolute;font-style:normal;font-family:var(--f-s);color:var(--accent);font-size:20px;opacity:0;animation:pfloat 2.6s ease-out infinite}
+.pfx i:nth-child(2){animation-delay:.85s}.pfx i:nth-child(3){animation-delay:1.7s}.pfx i:nth-child(4){animation-delay:1.25s}
+@keyframes pfloat{0%{opacity:0;transform:translateY(10px) scale(.6)}25%{opacity:1}100%{opacity:0;transform:translateY(-60px) scale(1.1) rotate(12deg)}}
+.fx-tea i{width:7px;height:34px;border-radius:8px;background:linear-gradient(transparent,rgba(160,140,120,.5),transparent);left:52%;top:30%}
+.fx-tea i:nth-child(2){left:58%}.fx-tea i:nth-child(3){left:64%}
+.fx-spark i{color:#f2b134;left:20%;top:22%}.fx-spark i:nth-child(2){left:72%;top:14%}.fx-spark i:nth-child(3){left:82%;top:40%}.fx-spark i:nth-child(4){left:12%;top:48%}
+.fx-heart i{color:#e83729;left:16%;top:18%}.fx-heart i:nth-child(2){left:78%;top:24%;font-size:15px}.fx-heart i:nth-child(3){left:30%;top:6%;font-size:13px}
+.fx-wind i{height:3px;width:46px;border-radius:3px;background:rgba(93,157,197,.7);left:-6%;top:30%;animation-name:pwind}
+.fx-wind i:nth-child(2){top:44%;width:30px}.fx-wind i:nth-child(3){top:58%;width:54px}
+@keyframes pwind{0%{opacity:0;transform:translateX(0)}30%{opacity:1}100%{opacity:0;transform:translateX(120px)}}
+/* arrival, once the section scrolls in */
+.pur .pc2{opacity:0;translate:0 46px;transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s,opacity .6s calc(var(--i) * .09s),translate .8s cubic-bezier(.2,1.25,.35,1) calc(var(--i) * .09s)}
+.pur.in .pc2{opacity:1;translate:0 0}
+.pur .pc2 i{scale:.4;opacity:0;transition:scale .7s cubic-bezier(.3,1.7,.5,1) calc(.2s + var(--i) * .09s),opacity .3s calc(.2s + var(--i) * .09s);transform-origin:left bottom}
+.pur.in .pc2 i{scale:1;opacity:1}
+.pur .pc2 b .w>span{translate:0 110%;transition:translate .5s cubic-bezier(.2,.8,.2,1) calc(.3s + var(--i) * .09s)}
+.pur.in .pc2 b .w>span{translate:0 0}
+.pur .pc2>.pcx>span{opacity:0;transition:opacity .6s calc(.55s + var(--i) * .09s)}
+.pur.in .pc2>.pcx>span{opacity:.85}
+.pur .pfig{translate:0 100%;transition:translate .9s cubic-bezier(.3,1.5,.5,1) calc(.35s + var(--i) * .1s)}
+.pur.in .pfig{translate:0 0}
+@media (prefers-reduced-motion:reduce){.pfig img,.pfx i{animation:none}}
 .st2{list-style:none;counter-reset:s;display:grid;gap:2px;padding:0;margin:0}
 .st2 li{counter-increment:s;display:grid;grid-template-columns:48px 1fr;gap:4px 12px;padding:12px 0;border-top:1px solid rgba(0,0,0,.07)}
 .st2 li::before{content:counter(s,decimal-leading-zero);font-family:var(--f-m);color:var(--accent);grid-row:span 2;padding-top:3px}
@@ -418,7 +455,7 @@ body.is-watching .openArea,body.index-open .openArea,body.area-open .openArea{tr
   .ahd::after{background:linear-gradient(180deg,var(--c) 0%,color-mix(in srgb,var(--c) 80%,transparent) 38%,transparent 62%)}
   .hb{grid-template-columns:1fr auto;grid-template-areas:"n s" "d d" "p p" "h h"}
   .hd{justify-content:space-between}.hd button{width:38px;height:38px}
-  .pg{grid-template-columns:1fr}.as{padding:20px}.atop .pill{padding:8px 12px}
+  .pg{grid-template-columns:1fr}.as{padding:20px}.pc2.fig{min-height:170px;padding-right:40%}.atop .pill{padding:8px 12px}
 }
 
 /* ---------- Health extras ---------- */

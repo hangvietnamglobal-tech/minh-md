@@ -876,12 +876,42 @@ function drawArea(i){
       ${(a.extras||[]).includes("move") ? moveSection() : ""}
       ${visionStory(a)}
       ${(a.extras||[]).includes("boards") ? boardSection() : ""}
-      <section class="as"><p class="kick"><b>##</b> purpose — why it matters</p><div class="pg">${a.purpose.map(([t,d],j) => `<div class="pc2"><i>${["I","II","III","IV","V","VI"][j]||j+1}</i><b>${esc(t)}</b><span>${esc(d)}</span></div>`).join("")}</div></section>
+      ${purposeSection(a)}
       <section class="as"><p class="kick"><b>##</b> strategy — how</p><ol class="st2">${a.strategy.map(([t,d]) => `<li><b>${esc(t)}</b><span>${esc(d)}</span></li>`).join("")}</ol></section>
       <section class="as"><p class="kick"><b>##</b> goals · 2027</p><div class="gl2">${a.goals.map((g,j) => { const gk = k + ":" + j; return `<button class="${DB.goal[gk]?"on":""}" data-g="${gk}"><i>${DB.goal[gk]?"✓":""}</i><span>${esc(g)}</span></button>`; }).join("")}</div>
         ${a.quote ? `<blockquote>${esc(a.quote)}</blockquote>` : ""}</section>
     </div>`;  stopPainting(); const hp = mountPainting($("#ain .ahd"), k); $("#aStyle").textContent = hp ? "living painting · " + hp.style : "";
-  storyInit(k);
+  storyInit(k); purposeInit();
+}
+/* ---- Purpose — why it matters: four cards that arrive like a hand of cards.
+   Words rise out of a mask, the numeral springs in, cards tilt toward the pointer with a moving shine.
+   Areas with purposePose get Minh herself on each card (her own character art as a puppet) with a small
+   living motif: steam, sparks, hearts, wind. Tap a card and she hops. ---- */
+const POSE_SRC = {old:"poses/her-old.webp", laugh:"poses/laugh.webp", wave:"poses/wave.webp", walk:"poses/walk.webp", stand:"poses/stand.webp", yoga:"poses/yoga.webp", read:"poses/read.webp", heart:"poses/heart.webp", meditate:"poses/meditate.webp", travel:"poses/travel.webp", money:"poses/money.webp", career:"poses/career.webp"};
+const FX = {tea:'<i></i><i></i><i></i>', spark:'<i>✦</i><i>✦</i><i>✧</i><i>✦</i>', heart:'<i>♥</i><i>♥</i><i>♥</i>', wind:'<i></i><i></i><i></i>'};
+const rise = t => esc(t).split(/(\s+)/).map(w => w.trim() ? `<span class="w"><span>${w}</span></span>` : w).join("");
+function purposeSection(a){
+  const pp = a.purposePose || [];
+  return `<section class="as pur" style="--c:${a.color}"><p class="kick"><b>##</b> purpose — why it matters</p><div class="pg">${a.purpose.map(([t,d],j) => {
+    const [pose, fx] = pp[j] || [];
+    return `<article class="pc2${pose ? " fig" : ""}" style="--i:${j}" tabindex="0">
+      <div class="pcx"><i>${roman[j]||j+1}</i><b>${rise(t)}</b><span>${esc(d)}</span></div>
+      ${pose ? `<div class="pfig"><img src="${POSE_SRC[pose]}" alt="" loading="lazy" decoding="async"><span class="pfx fx-${fx}">${FX[fx]||""}</span></div>` : ""}
+      <span class="shine"></span></article>`; }).join("")}</div></section>`;
+}
+let pio = null;
+function purposeInit(){
+  pio && pio.disconnect();
+  const sec = $("#ain .pur"); if(!sec) return;
+  if(reduce){ sec.classList.add("in"); return; }
+  pio = new IntersectionObserver(es => es.forEach(e => { if(e.isIntersecting){ sec.classList.add("in"); pio.disconnect(); } }), {root:$("#area"), threshold:.25});
+  pio.observe(sec);
+  sec.querySelectorAll(".pc2").forEach(c => {
+    c.addEventListener("pointermove", e => { const r = c.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5;
+      c.style.setProperty("--ry", (x * 8).toFixed(2) + "deg"); c.style.setProperty("--rx", (-y * 8).toFixed(2) + "deg"); c.style.setProperty("--sx", ((x + .5) * 100).toFixed(1) + "%"); });
+    c.addEventListener("pointerleave", () => { c.style.setProperty("--ry", "0deg"); c.style.setProperty("--rx", "0deg"); });
+    c.addEventListener("click", () => { const f = c.querySelector(".pfig img"); if(!f) return; f.classList.remove("hop"); void f.offsetWidth; f.classList.add("hop"); });
+  });
 }
 /* ---- Vision as a story: one chapter per vision line, pinned while you scroll.
    Type rules after huashu-art-motion's TY kit: words rise out of a mask one by one (enter slow ~.45s),
