@@ -70,3 +70,13 @@ Saved in the browser (`localStorage`, key `minhmd.v1`) on that device only.
 ---
 
 Believe. Behave. Become. — m.
+
+## Living paintings (art-motion)
+
+Each area page header is a living painting, a canvas that repaints itself at 5–12 fps with "boiling" brushwork, one art style per area:
+Health (flow strokes), Mind (pointillism), Emotions (watercolour), Character (mosaic), Spirit (impressionist dabs), Connection (cut paper),
+Money (gold-leaf mosaic), Career (cubist facets), Life Quality (infinity dots), Energy (Bauhaus colour study), Love (ink & blossom).
+
+- `src/art-motion/core.js` is an ES-module port of the painting toolkit from
+  [huashu-art-motion](https://github.com/alchaincyf/huashu-art-motion) (MIT, see `src/art-motion/LICENSE-huashu-art-motion`).
+- `src/art-motion/scenes.js` holds the eleven original compositions. `index.js` mounts and pauses them (off-screen, hidden tab, page closed), and with reduced motion it draws a single still frame.

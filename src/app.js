@@ -6,6 +6,7 @@ import { CustomEase } from "gsap/CustomEase";
 import Lenis from "lenis";
 import { EN } from "./content.js";
 import { ART, DEFS, PLANT } from "./art.js";
+import { mountPainting, stopPainting } from "./art-motion/index.js";
 gsap.registerPlugin(ScrollTrigger, CustomEase);
 
 /* =========================================================
@@ -858,12 +859,12 @@ function drawArea(i){
       <div class="heat" title="last 12 weeks">${heat}</div>
     </div>`; }).join("");
   $("#ain").innerHTML = `
-    <header class="ahd" style="background:${a.color};color:${dark?"#f4efe8":"#201e1f"}">
+    <header class="ahd" style="--c:${a.color};background:${a.color};color:${dark?"#f4efe8":"#201e1f"}">
       <div class="atop"><button class="pill" id="aPrev" aria-label="Previous area">←</button><button class="pill" id="aNext" aria-label="Next area">→</button>
         <span class="sp"></span><button class="pill" id="aPlay">▶ play the scene</button><button class="pill close" id="aClose">close ✕</button></div>
       <div class="ahg"><div>
         <p class="kick"><b>##</b> ${i+1} / ${A.length} · ${esc(a.arcana)}</p>
-        <h2>${esc(a.name)}</h2><p class="ess">${esc(a.essence)}</p><p class="atag">${esc(a.tag)}</p></div>
+        <h2>${esc(a.name)}</h2><p class="ess">${esc(a.essence)}</p><p class="atag">${esc(a.tag)}</p><p class="astyle" id="aStyle"></p></div>
         <div class="aart"><img class="atar" alt="" src="${a.tarot}">${a.propImg ? `<img class="aprop" alt="" src="${a.propImg}">` : ""}</div></div>
     </header>
     <div class="abody">
@@ -878,7 +879,7 @@ function drawArea(i){
       <section class="as"><p class="kick"><b>##</b> strategy — how</p><ol class="st2">${a.strategy.map(([t,d]) => `<li><b>${esc(t)}</b><span>${esc(d)}</span></li>`).join("")}</ol></section>
       <section class="as"><p class="kick"><b>##</b> goals · 2027</p><div class="gl2">${a.goals.map((g,j) => { const gk = k + ":" + j; return `<button class="${DB.goal[gk]?"on":""}" data-g="${gk}"><i>${DB.goal[gk]?"✓":""}</i><span>${esc(g)}</span></button>`; }).join("")}</div>
         ${a.quote ? `<blockquote>${esc(a.quote)}</blockquote>` : ""}</section>
-    </div>`;
+    </div>`;  const st = mountPainting($("#ain .ahd"), k); $("#aStyle").textContent = st ? "living painting · " + st : "";
 }
 /* ---- Health extras: the 2027 movement tracker and the three vision boards ---- */
 DB.move = DB.move || {}; DB.vb = DB.vb || {};
@@ -918,7 +919,7 @@ vbFile.onchange = () => { const f = vbFile.files[0]; if(!f || !vbSlot) return; c
     const [b, k] = vbSlot; (DB.vb[b] = DB.vb[b] || [])[k] = cv.toDataURL("image/jpeg", .78); LS.set(DB); URL.revokeObjectURL(img.src); vbFile.value = ""; drawArea(AREA); };
   img.src = URL.createObjectURL(f); };
 function area(i, from){
-  if(i < 0){ if(AREA < 0) return; document.body.classList.remove("area-open"); AREA = -1; if(location.hash.startsWith("#/")) history.replaceState(null, "", location.pathname + location.search); lenis && lenis.start(); return; }
+  if(i < 0){ if(AREA < 0) return; stopPainting(); document.body.classList.remove("area-open"); AREA = -1; if(location.hash.startsWith("#/")) history.replaceState(null, "", location.pathname + location.search); lenis && lenis.start(); return; }
   i = (i + A.length) % A.length; AREA = i; watch(false); openIndex(false); reading(false); today(false); lenis && lenis.stop();
   drawArea(i); document.body.classList.add("area-open"); $("#area").scrollTop = 0;
   if(location.hash !== "#/" + slug(A[i].name)) history.replaceState(null, "", "#/" + slug(A[i].name));

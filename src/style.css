@@ -330,6 +330,11 @@ body.reading .read{display:block}
 body.area-open .area{display:block}
 .ahd{padding:22px var(--pad) 0;position:relative;overflow:hidden}
 .atop{display:flex;gap:10px;align-items:center;position:relative;z-index:2}
+.ahd .paint{position:absolute;inset:0;width:100%;height:100%;z-index:0;display:block}
+.ahd::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:linear-gradient(90deg,var(--c) 0%,color-mix(in srgb,var(--c) 82%,transparent) 26%,color-mix(in srgb,var(--c) 30%,transparent) 46%,transparent 60%)}
+.ahg{position:relative;z-index:2}
+.astyle{font-family:var(--f-m);font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.6;margin:-30px 0 34px}
 .atop .sp{flex:1}
 .ahg{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:4vw;align-items:end;max-width:1280px;margin:0 auto;padding-top:5vh}
 .ahd h2{font-size:clamp(64px,10vw,180px);font-weight:620;letter-spacing:-.045em;line-height:.86;margin:14px 0 18px}
@@ -385,6 +390,7 @@ body.is-watching .openArea,body.index-open .openArea,body.area-open .openArea{tr
 .ath.on i{background:var(--accent);border-color:var(--accent)}.ath em{font-style:normal;font-family:var(--f-m);font-size:11px;opacity:.55;margin-left:4px}
 @media (max-width:760px){
   .ahg{grid-template-columns:1fr}.aart{height:200px}.ahd h2{font-size:64px}
+  .ahd::after{background:linear-gradient(180deg,var(--c) 0%,color-mix(in srgb,var(--c) 80%,transparent) 38%,transparent 62%)}
   .hb{grid-template-columns:1fr auto;grid-template-areas:"n s" "d d" "p p" "h h"}
   .hd{justify-content:space-between}.hd button{width:38px;height:38px}
   .pg{grid-template-columns:1fr}.as{padding:20px}.atop .pill{padding:8px 12px}
