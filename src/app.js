@@ -7,7 +7,7 @@ import Lenis from "lenis";
 import { EN } from "./content.js";
 import { ART, DEFS, PLANT } from "./art.js";
 import { mountPainting, stopPainting } from "./art-motion/index.js";
-import { mountGhibli } from "./art-motion/ghibli.js";
+import { mountAnimeRoom } from "./art-motion/anime-room.js";
 gsap.registerPlugin(ScrollTrigger, CustomEase);
 
 /* =========================================================
@@ -932,7 +932,7 @@ function storyInit(k){
   vio && vio.disconnect(); VJ = -1;
   const root = $("#ain .vst"); if(!root) return;
   GH && GH.stop(); GH = null;
-  const hp = STORY_ANIME[k] ? (GH = mountGhibli(root.querySelector(".vcam"))) : mountPainting(root.querySelector(".vcam"), k, {budget:300000, cls:"vcv"});
+  const hp = STORY_ANIME[k] ? (GH = mountAnimeRoom(root.querySelector(".vcam"))) : mountPainting(root.querySelector(".vcam"), k, {budget:300000, cls:"vcv"});
   root.classList.toggle("anime", !!GH);
   root.querySelector(".vcap").textContent = hp ? hp.style : "";
   storyChapter(0, true); if(reduce) return;
