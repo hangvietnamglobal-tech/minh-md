@@ -8,7 +8,7 @@
      I   morning stretch at the open window       II  yoga — tree pose, the cat copies her
      III skipping rope, the cat chases the yarn    IV  night — asleep in the armchair, cat curled up
      V   eighty — white hair, tea in the golden afternoon, the old cat beside her
-   Original character (Minh: dark hair in a bun, round glasses, cream sweater) — no film characters.
+   Minh is her own character art (poses/*.webp) used as a puppet; the cat and room are drawn in code.
    The still room is cached per chapter; only living parts are drawn each frame, at 12 fps ("on twos"). */
 import { TAU, clamp, lerp, ss, rng, hash, noise, watercolor, ellipsePts } from './core.js';
 
@@ -46,59 +46,27 @@ const rot = ([x, y], a) => [x * Math.cos(a) - y * Math.sin(a), x * Math.sin(a) +
 const add = (a, b) => [a[0] + b[0], a[1] + b[1]];
 const lerp2 = (a, b, p) => [lerp(a[0], b[0], p), lerp(a[1], b[1], p)];
 
-/* ---------- Minh ----------
-   pose = { hip, tilt, head, hands:[L,R], feet:[L,R], knees?:[L,R], elbows?:[±1,±1], eyes:'open'|'closed'|'smile', mouth, old, cup }   (L = viewer's left) */
-const PAL = { skin: '#f8dcc4', skinS: '#e8b898', top: '#f6ecd8', topS: '#dcc8a6', skirt: '#e2592d', skirtS: '#b8441f', shoe: '#6a4434', hair: '#3a2a22', hairS: '#24180f', hairHi: '#6a4e3e' };
-function minh(g, P) {
-  const old = !!P.old, hair = old ? '#efe9e0' : PAL.hair, hairS = old ? '#cbc2b6' : PAL.hairS;
-  const tilt = P.tilt || 0, hip = P.hip;
-  const sc = add(hip, rot([0, -132], tilt)), perp = rot([1, 0], tilt);
-  const sh = [add(sc, [-perp[0] * 40, -perp[1] * 40]), add(sc, [perp[0] * 40, perp[1] * 40])];
-  const hp = [add(hip, [-perp[0] * 22, -perp[1] * 22]), add(hip, [perp[0] * 22, perp[1] * 22])];
-  const neck = add(sc, rot([0, -12], tilt)), ha = tilt + (P.head || 0), head = add(neck, rot([0, -40], ha));
-  const knees = P.knees || [ik(hp[0], P.feet[0], 112, 104, 1), ik(hp[1], P.feet[1], 112, 104, -1)];
-  const eb = P.elbows || [-1, 1];
-  const elbows = [ik(sh[0], P.hands[0], 86, 80, eb[0]), ik(sh[1], P.hands[1], 86, 80, eb[1])];
-  g.save(); g.lineCap = 'round'; g.lineJoin = 'round';
-  [0, 1].forEach(k => { cel(g, limb(hp[k], knees[k], 30, 24), PAL.skin, PAL.skinS, 4, 2); cel(g, limb(knees[k], P.feet[k], 24, 18), PAL.skin, PAL.skinS, 4, 2);
-    const f = P.feet[k]; cel(g, ell(f[0] + (k ? 8 : -8), f[1] + 2, 17, 9), PAL.shoe, '#4a2c22', 3, 2); });
-  // skirt: from the waist, flaring to just below the knees, following the knees when the legs spread
-  const waist = add(hip, rot([0, -26], tilt)), kn = knees, lowY = Math.max(kn[0][1], kn[1][1]) + 26;
-  const sk = poly([add(waist, [-perp[0] * 34, -perp[1] * 34]), add(waist, [perp[0] * 34, perp[1] * 34]),
-    [Math.max(kn[0][0], kn[1][0]) + 30, lowY + 4], [lerp(kn[0][0], kn[1][0], .5), lowY + 14], [Math.min(kn[0][0], kn[1][0]) - 30, lowY + 4]]);
-  cel(g, sk, PAL.skirt, PAL.skirtS, 9, 4);
-  const arm = k => { cel(g, limb(sh[k], elbows[k], 30, 26), PAL.top, PAL.topS, 5, 3); cel(g, limb(elbows[k], P.hands[k], 24, 18), PAL.top, PAL.topS, 5, 3); cel(g, ell(P.hands[k][0], P.hands[k][1], 10, 10), PAL.skin, PAL.skinS, 2, 2); };
-  arm(0);
-  const torso = poly([add(sh[0], [-perp[0] * 6, -perp[1] * 6]), add(sh[1], [perp[0] * 6, perp[1] * 6]), add(hp[1], [perp[0] * 16, perp[1] * 16]), add(hp[0], [-perp[0] * 16, -perp[1] * 16])]);
-  cel(g, torso, PAL.top, PAL.topS, 12, 6);
-  g.strokeStyle = 'rgba(160,130,90,.45)'; g.lineWidth = 2;
-  for (let k = 1; k < 5; k++) { const a = add(sc, rot([-30 + k * 12, 18], tilt)), b = add(hip, rot([-30 + k * 12, -30], tilt)); g.beginPath(); g.moveTo(...a); g.lineTo(...b); g.stroke(); }   // knit ribs
-  arm(1);
-  if (P.cup) drawCup(g, P.hands[1]);
-  cel(g, limb(sc, neck, 22, 20), PAL.skin, PAL.skinS, 3, 2, false);
-  g.save(); g.translate(head[0], head[1]); g.rotate(ha);
-  cel(g, ell(0, -46, old ? 26 : 24, old ? 24 : 22), hair, hairS, 6, 4);                                   // the bun
-  cel(g, ell(0, 0, 40, 44), hair, hairS, 10, 6);                                                         // back of the hair
-  cel(g, ell(0, 6, 34, 38), PAL.skin, PAL.skinS, 8, 6);                                                  // face
-  g.fillStyle = hair; g.beginPath(); g.moveTo(-38, 4); g.quadraticCurveTo(-36, -40, 0, -40); g.quadraticCurveTo(36, -40, 38, 4); g.quadraticCurveTo(22, -20, 4, -14); g.quadraticCurveTo(-14, -22, -38, 4); g.fill();   // bangs
-  g.strokeStyle = LINE; g.lineWidth = 2.4; g.beginPath(); g.ellipse(0, -2, 40, 44, 0, Math.PI * .95, Math.PI * 2.05); g.stroke();
-  if (!old) { g.strokeStyle = PAL.hairHi; g.lineWidth = 3; g.beginPath(); g.arc(-8, -18, 22, Math.PI * 1.15, Math.PI * 1.45); g.stroke(); }
-  const ey = 8, eyes = P.eyes || 'open';
-  [-14, 14].forEach(x => {
-    if (eyes === 'closed') { g.strokeStyle = LINE; g.lineWidth = 2.6; g.beginPath(); g.arc(x, ey - 2, 7, .25, Math.PI - .25); g.stroke(); }
-    else if (eyes === 'smile') { g.strokeStyle = LINE; g.lineWidth = 2.6; g.beginPath(); g.arc(x, ey + 3, 7, Math.PI + .3, -.3); g.stroke(); }
-    else { disc(g, x, ey, 5.2, '#2a1a12'); disc(g, x - 1.6, ey - 2, 1.8, '#fff'); }
-  });
-  g.strokeStyle = '#7a4a2a'; g.lineWidth = 1.8; [-14, 14].forEach(x => { g.beginPath(); g.arc(x, ey, 11, 0, TAU); g.stroke(); }); g.beginPath(); g.moveTo(-3, ey); g.lineTo(3, ey); g.stroke();   // round glasses
-  if (old) { g.strokeStyle = 'rgba(160,110,90,.55)'; g.lineWidth = 1.4; [-1, 1].forEach(s => { g.beginPath(); g.moveTo(s * 27, ey + 2); g.lineTo(s * 31, ey + 7); g.stroke(); g.beginPath(); g.arc(s * 10, 28, 6, s < 0 ? 2.2 : .3, s < 0 ? 2.9 : 1); g.stroke(); }); }   // laugh lines
-  disc(g, -22, 22, 7, 'rgba(240,130,120,.45)'); disc(g, 22, 22, 7, 'rgba(240,130,120,.45)');
-  g.strokeStyle = LINE; g.lineWidth = 2.2; g.beginPath();
-  if (P.mouth === 'o') g.ellipse(0, 30, 4, 5, 0, 0, TAU); else g.arc(0, 24, 7, .3, Math.PI - .3);
-  g.stroke();
-  g.restore(); g.restore();
+/* ---------- Minh: her own character art, used as a puppet (human-md style) ----------
+   The sprites are the drawn character from the site (poses/*.webp, cut at the thigh), so she stands in the
+   foreground with the cut below the frame. Motion is puppetry: breathing, sway around the feet, hops with
+   squash & stretch, pose swaps on a "pop". The window light is laid over her (source-atop) so she sits in
+   the room's light; at night and at sunset the room tint covers her too. */
+const IMG = {};
+const SPRITES = { stand: 'poses/stand.webp', wave: 'poses/wave.webp', yoga: 'poses/yoga.webp', laugh: 'poses/laugh.webp', walk: 'poses/walk.webp', read: 'poses/read.webp', heart: 'poses/heart.webp', old: 'poses/her-old.webp' };
+function loadSprites(base) { for (const [k, src] of Object.entries(SPRITES)) if (!IMG[k]) { const im = new Image(); im.decoding = 'async'; im.src = base + src; IMG[k] = im; } }
+const SPR = off(10, 10);
+function puppet(g, key, x, bottom, h, { rot = 0, sx = 1, sy = 1, light = 'rgba(255,236,190,.22)', from = 'left' } = {}) {
+  const im = IMG[key]; if (!im || !im.complete || !im.naturalWidth) return;
+  const w = h * im.naturalWidth / im.naturalHeight;
+  // shadow on the floor
+  g.save(); g.fillStyle = 'rgba(70,40,20,.18)'; g.beginPath(); g.ellipse(x, Math.min(bottom, 925), w * .34, 16, 0, 0, TAU); g.fill(); g.restore();
+  // window light laid over the sprite only
+  const m = g.getTransform(), S = Math.hypot(m.a, m.b), pw = Math.max(2, Math.round(w * S)), ph = Math.max(2, Math.round(h * S));
+  if (SPR.width !== pw || SPR.height !== ph) { SPR.width = pw; SPR.height = ph; }
+  const c = SPR.getContext('2d'); c.globalCompositeOperation = 'source-over'; c.clearRect(0, 0, pw, ph); c.drawImage(im, 0, 0, pw, ph);
+  if (light) { c.globalCompositeOperation = 'source-atop'; const q = c.createLinearGradient(from === 'left' ? 0 : pw, 0, from === 'left' ? pw : 0, 0); q.addColorStop(0, light); q.addColorStop(.6, 'rgba(0,0,0,0)'); c.fillStyle = q; c.fillRect(0, 0, pw, ph); }
+  g.save(); g.translate(x, bottom); g.rotate(rot); g.scale(sx, sy); g.drawImage(SPR, -w / 2, -h, w, h); g.restore();
 }
-function drawCup(g, h) { cel(g, poly([[h[0] - 12, h[1] - 26], [h[0] + 14, h[1] - 26], [h[0] + 11, h[1] + 2], [h[0] - 9, h[1] + 2]]), '#fbf8f0', '#d8d0c4', 3, 2, true, 2); }
-
 /* ---------- the cat (orange & white, cel) ---------- */
 function cat(g, x, y, s, { pose = 'sit', t = 0, old = false }) {
   const O = old ? '#e8a868' : '#f3a24c', OS = old ? '#c88a52' : '#d27a2c', Wt = '#fffaf2', WS = '#e2d8ca';
@@ -228,59 +196,49 @@ function komorebi(g, j, t) {
 }
 
 /* ---------- the five moments ---------- */
-const FOOT = 905;
+const FOOT = 905, BOT = 1060, HH = 800;          // sprites stand with their thigh cut below the frame
 const CH = [
-  { // I · morning stretch at the window; the cat stretches too
+  { // I · good morning: she greets the sun at the window, breathing in; the cat stretches
     actors(g, t) {
-      const q = (t % 8) / 8, up = ss(0, .2, q) * (1 - ss(.85, 1, q)), side = Math.sin(clamp((q - .25) / .55) * TAU) * ss(.25, .35, q) * (1 - ss(.75, .8, q));
-      const x = 580, tilt = side * .2, hip = [x, FOOT - 210 - up * 4], sc = add(hip, rot([0, -132], tilt));
-      const reach = k => add(sc, rot([(k ? 1 : -1) * lerp(70, 22, up), lerp(110, -168, up)], tilt));
-      cat(g, 320, FOOT, .95, { pose: q > .3 && q < .8 ? 'stretch' : 'sit', t });
-      minh(g, { hip, tilt, head: -tilt * .4, feet: [[x - 30, FOOT], [x + 30, FOOT]], hands: [reach(0), reach(1)], elbows: [1, -1], eyes: up > .6 ? 'closed' : 'open', mouth: up > .6 ? 'o' : '' });
+      const q = t % 8, wave = q > 3.2 && q < 6.4, pop = Math.max(0, 1 - Math.abs(q - 3.2) * 6) + Math.max(0, 1 - Math.abs(q - 6.4) * 6), br = Math.sin(t * 1.6) * .008;
+      cat(g, 300, FOOT, .95, { pose: q > 2 && q < 6 ? 'stretch' : 'sit', t });
+      puppet(g, wave ? 'wave' : 'stand', 640, BOT, HH, { rot: Math.sin(t * .8) * .012 - (wave ? .02 : 0), sx: 1 - pop * .03, sy: 1 + br + pop * .04 });
     },
   },
-  { // II · yoga — tree pose, swaying like the tree outside; the cat copies
+  { // II · tree pose, swaying like the tree outside; the cat copies her stretch
     actors(g, t) {
-      const x = 580, sway = Math.sin(t * 1.1) * .045, q = (t % 10) / 10, up = ss(.15, .3, q) * (1 - ss(.85, .95, q));
-      const hip = [x, FOOT - 210], sc = add(hip, rot([0, -132], sway)), hand = lerp2(add(sc, rot([0, 44], sway)), add(sc, rot([0, -190], sway)), up);
-      cat(g, 320, FOOT, .95, { pose: 'stretch', t: t * .7 });
-      minh(g, { hip, tilt: sway, head: -sway * .5, feet: [[x - 8, FOOT], [x + 4, FOOT - 112]], knees: [[x - 12, FOOT - 104], [x + 92, FOOT - 150]], hands: [add(hand, [-9, 0]), add(hand, [9, 0])], elbows: [1, -1], eyes: 'closed' });
+      const sway = Math.sin(t * 1.1) * .03, br = Math.sin(t * 1.3) * .01;
+      cat(g, 300, FOOT, .95, { pose: 'stretch', t: t * .7 });
+      puppet(g, 'yoga', 640, BOT, HH, { rot: sway, sy: 1 + br });
     },
   },
-  { // III · skipping rope; the cat chases the yarn
+  { // III · she laughs and bounces, the cat chases the yarn
     actors(g, t) {
-      const x = 580, ph = (t * 1.6) % 1, air = Math.max(0, Math.sin(ph * TAU)), y = FOOT - air * 46;
-      const hip = [x, y - 210], c = Math.cos(ph * TAU), s = Math.sin(ph * TAU), hands = [[x - 72 + c * 10, y - 196 + s * 10], [x + 72 - c * 10, y - 196 + s * 10]];
-      const ry = Math.cos(ph * TAU), front = ry < -.1;              // rope over her head (behind) or sweeping under her feet (in front)
-      const rope = () => { g.strokeStyle = '#e2592d'; g.lineWidth = 4; g.beginPath(); g.moveTo(...hands[0]); g.bezierCurveTo(hands[0][0] - 24, y - 196 - ry * 250, hands[1][0] + 24, y - 196 - ry * 250, ...hands[1]); g.stroke(); };
-      if (!front) rope();
+      const ph = (t * 1.4) % 1, air = Math.max(0, Math.sin(ph * TAU)), land = Math.max(0, -Math.sin(ph * TAU));
       const bx = 330 + Math.sin(t * .9) * 80; disc(g, bx, FOOT - 14, 14, '#c9a5f8'); g.strokeStyle = '#8f6ad0'; g.lineWidth = 2; g.beginPath(); g.arc(bx, FOOT - 14, 9, .5, 3.5); g.stroke();
       cat(g, bx - 74, FOOT, .9, { pose: 'hop', t });
-      minh(g, { hip, feet: [[x - 18, y], [x + 18, y]], knees: air > .3 ? [[x - 26, y - 116], [x + 26, y - 116]] : null, hands, elbows: [1, -1], eyes: 'smile' });
-      if (front) rope();
+      puppet(g, (t % 6) < 4 ? 'laugh' : 'walk', 650, BOT - air * 70, HH, { rot: Math.sin(t * 2.8) * .03, sx: 1 + land * .04 - air * .02, sy: 1 - land * .05 + air * .04 });
+      for (let k = 0; k < 4; k++) { const p = (t * .4 + k / 4) % 1; g.globalAlpha = 1 - p; g.fillStyle = k % 2 ? '#e2592d' : '#f8d867'; g.font = `${26 + p * 10}px Georgia, serif`; g.fillText(k % 2 ? '♪' : '✦', 800 + k * 30 + Math.sin(t + k) * 10, 380 - p * 160); g.globalAlpha = 1; }
     },
   },
-  { // IV · night — asleep in the armchair, a book on her lap, the cat curled up
+  { // IV · night — she has fallen asleep reading in the armchair; the cat curled up
     actors(g, t) {
-      const x = 560, br = Math.sin(t * 1.4) * 3, hip = [x, 770 + br * .3];
+      const br = Math.sin(t * 1.2), nod = Math.sin(t * .35) * .015;
       cat(g, 260, FOOT - 6, .95, { pose: 'sleep', t });
-      minh(g, { hip, tilt: .03, head: .3 + br * .01, feet: [[x - 34, FOOT - 24], [x + 30, FOOT - 24]], knees: [[x - 40, 784], [x + 40, 784]], hands: [[x - 22, 742], [x + 24, 744]], elbows: [-1, 1], eyes: 'closed' });
-      wash(g, [[x - 120, 756], [x + 116, 752], [x + 126, 860], [x - 128, 864]], '#f2c46a', { layers: 2, alpha: .8, amp: 4, seed: 7, edge: .2, blend: 'source-over' });   // blanket
-      g.fillStyle = '#c9553a'; g.fillRect(x - 46, 736, 92, 16); g.fillStyle = '#fbf8f0'; g.fillRect(x - 42, 732, 84, 6);           // the book
-      for (let k = 0; k < 3; k++) { const q = (t * .25 + k / 3) % 1; g.fillStyle = `rgba(255,255,255,${.9 - q * .9})`; g.font = `italic ${22 + q * 18}px Georgia, serif`; g.fillText('z', x + 60 + q * 60, 520 - q * 120); }
+      puppet(g, 'read', 560, 1000, 700, { rot: nod - .02, sy: 1 + br * .008, light: 'rgba(255,190,110,.28)', from: 'right' });
+      wash(g, [[380, 860], [740, 852], [760, 1010], [360, 1010]], '#f2c46a', { layers: 2, alpha: .85, amp: 4, seed: 7, edge: .2, blend: 'source-over' });   // blanket
+      for (let k = 0; k < 3; k++) { const p = (t * .25 + k / 3) % 1; g.fillStyle = `rgba(255,255,255,${.9 - p * .9})`; g.font = `italic ${24 + p * 18}px Georgia, serif`; g.fillText('z', 680 + p * 60, 380 - p * 120); }
       g.save(); g.globalCompositeOperation = 'screen'; const lamp = g.createRadialGradient(810, 410, 10, 810, 410, 440); lamp.addColorStop(0, 'rgba(255,200,110,.34)'); lamp.addColorStop(1, 'rgba(255,200,110,0)'); g.fillStyle = lamp; g.fillRect(0, 0, DW, DH); g.restore();
     },
   },
-  { // V · at eighty — white hair, tea in the golden afternoon, the old cat beside her
+  { // V · at eighty — silver hair, her tea in the golden afternoon, the old cat beside her
     actors(g, t) {
-      const x = 660, q = t % 6, sip = ss(.8, 1.8, q) * (1 - ss(3.4, 4.4, q)), hip = [x, 712];
-      const sc = add(hip, rot([0, -132], .05)), mouth = add(sc, [20, -48]), rest = [x + 92, 586];
-      cat(g, 360, FOOT, .95, { pose: 'sit', t, old: true });
-      wash(g, [[x - 74, 500], [x + 74, 500], [x + 70, 716], [x - 70, 716]], '#8a5a3a', { layers: 2, alpha: .9, amp: 2, seed: 61, edge: .2, blend: 'source-over' });   // her chair: tall back, seat, legs
-      g.fillStyle = '#6a4434'; g.fillRect(x - 84, 708, 168, 18); g.fillRect(x - 78, 724, 12, 180); g.fillRect(x + 66, 724, 12, 180);
-      const hand = lerp2(rest, mouth, sip);
-      minh(g, { old: true, hip, tilt: .05, head: -sip * .14 + .04, feet: [[x - 30, FOOT - 6], [x + 30, FOOT - 6]], knees: [[x - 36, 726], [x + 40, 726]], hands: [[x - 30, 716], hand], elbows: [1, 1], cup: 1, eyes: sip > .6 ? 'closed' : 'smile' });
-      for (let k = 0; k < 3; k++) { const p = (t * .5 + k / 3) % 1; g.strokeStyle = `rgba(255,255,255,${.75 - p * .75})`; g.lineWidth = 3; g.beginPath(); g.moveTo(hand[0] + k * 6 - 6, hand[1] - 32 - p * 40); g.quadraticCurveTo(hand[0] + 8 + Math.sin(t * 3 + k) * 8, hand[1] - 44 - p * 50, hand[0] + k * 6 - 4, hand[1] - 60 - p * 60); g.stroke(); }
+      const x = 660, br = Math.sin(t * 1.1) * .008, tilt = Math.sin(t * .5) * .015;
+      wash(g, [[x - 150, 420], [x + 150, 420], [x + 144, 760], [x - 144, 760]], '#8a5a3a', { layers: 2, alpha: .9, amp: 2, seed: 61, edge: .2, blend: 'source-over' });   // tall chair back
+      cat(g, 330, FOOT, .95, { pose: 'sit', t, old: true });
+      puppet(g, 'old', x, BOT, HH, { rot: tilt, sy: 1 + br, light: 'rgba(255,200,120,.3)' });
+      const w = HH * 880 / 1320, mx = x - w / 2 + w * .58, my = BOT - HH + HH * .47;                     // the mug in her hand
+      for (let k = 0; k < 3; k++) { const p = (t * .5 + k / 3) % 1; g.strokeStyle = `rgba(255,255,255,${.8 - p * .8})`; g.lineWidth = 3.5; g.beginPath(); g.moveTo(mx + k * 8 - 8, my - 10 - p * 40); g.quadraticCurveTo(mx + 10 + Math.sin(t * 3 + k) * 10, my - 30 - p * 50, mx + k * 8 - 6, my - 50 - p * 60); g.stroke(); }
       for (let k = 0; k < 12; k++) { const p = (t * .06 + hash(k, 4)) % 1, px = WIN[0] + 150 + p * 700 + Math.sin(t * 1.3 + k) * 20, py = WIN[1] + 200 + hash(k, 6) * 300 + p * 200; g.fillStyle = 'rgba(255,200,190,.9)'; g.beginPath(); g.ellipse(px, py, 5, 3, t + k, 0, TAU); g.fill(); }
     },
   },
@@ -289,7 +247,8 @@ const TINT = [null, null, null, 'rgba(70,90,150,.35)', 'rgba(255,170,90,.12)'];
 
 /* ---------- player: one canvas; a chapter change blooms the new moment in like wet paint ---------- */
 const fit = (W, H) => { const s = Math.max(W / DW, H / DH), ox = clamp(W / 2 - 560 * s, W - DW * s, 0), oy = (H - DH * s) * .6; return [s, ox, oy]; };
-export function mountAnimeRoom(host, { budget = 460000 } = {}) {
+export function mountAnimeRoom(host, { budget = 460000, base = './' } = {}) {
+  loadSprites(base);
   const cv = off(10, 10); cv.className = 'vcv'; cv.setAttribute('aria-hidden', 'true'); host.prepend(cv);
   const ctx = cv.getContext('2d'), stills = {}, layer = off(10, 10), reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   let W = 0, H = 0, cur = 0, prev = -1, tChange = 0, raf = 0, last = -1, visible = true, area = 0;
@@ -322,7 +281,7 @@ export function mountAnimeRoom(host, { budget = 460000 } = {}) {
   ro.observe(host); io.observe(host);
   if (reduce) draw(6); else raf = requestAnimationFrame(frame);
   return {
-    canvas: cv, style: 'Hand-painted anime · Minh & her cat',
+    canvas: cv, style: 'Hand-painted anime room · Minh & her cat',
     chapter(j) { j = clamp(j, 0, CH.length - 1); if (j === cur) return; prev = reduce ? -1 : cur; cur = j; tChange = Math.floor((performance.now() - t0) / 1000 * 12) / 12; if (reduce) draw(6); },
     stop() { cancelAnimationFrame(raf); ro.disconnect(); io.disconnect(); cv.remove(); },
   };
