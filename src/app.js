@@ -871,13 +871,52 @@ function drawArea(i){
         <div class="score">${ring(areaScore(i), /^#f4|^#f8|^#ff/i.test(a.color) ? "#fc4109" : a.color)}<p>of this week's targets<br><b>week of ${m.toLocaleDateString("en-GB",{day:"numeric",month:"short"})}</b></p></div></div>
         <div class="hbs">${habitRows}</div>
         <p class="tnote">Tap a day to tick it. Streaks count days in a row for daily habits, and weeks that hit the target for the rest. The strip is the last 12 weeks.</p></section>
+      ${(a.extras||[]).includes("move") ? moveSection() : ""}
       <section class="as"><p class="kick"><b>##</b> vision</p>${a.vision.map(v => `<p class="vis2">${esc(v)}</p>`).join("")}</section>
+      ${(a.extras||[]).includes("boards") ? boardSection() : ""}
       <section class="as"><p class="kick"><b>##</b> purpose — why it matters</p><div class="pg">${a.purpose.map(([t,d],j) => `<div class="pc2"><i>${["I","II","III","IV","V","VI"][j]||j+1}</i><b>${esc(t)}</b><span>${esc(d)}</span></div>`).join("")}</div></section>
       <section class="as"><p class="kick"><b>##</b> strategy — how</p><ol class="st2">${a.strategy.map(([t,d]) => `<li><b>${esc(t)}</b><span>${esc(d)}</span></li>`).join("")}</ol></section>
       <section class="as"><p class="kick"><b>##</b> goals · 2027</p><div class="gl2">${a.goals.map((g,j) => { const gk = k + ":" + j; return `<button class="${DB.goal[gk]?"on":""}" data-g="${gk}"><i>${DB.goal[gk]?"✓":""}</i><span>${esc(g)}</span></button>`; }).join("")}</div>
         ${a.quote ? `<blockquote>${esc(a.quote)}</blockquote>` : ""}</section>
     </div>`;
 }
+/* ---- Health extras: the 2027 movement tracker and the three vision boards ---- */
+DB.move = DB.move || {}; DB.vb = DB.vb || {};
+let MOVE_ACT = 0, MOVE_YEAR = new Date().getFullYear();
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const MOVE_HABIT = [0, 1, 0, 0, 0, null];          // Gym/Run/Cycle/Swim tick "Train", Yoga ticks "Yoga"
+function moveSection(){
+  const now = new Date(), y = MOVE_YEAR; let yearN = 0;
+  const rows = MONTHS.map((mn, m) => { const nd = new Date(y, m+1, 0).getDate(); let n = 0, cells = "";
+    for(let d=1; d<=nd; d++){ const dt = new Date(y, m, d), k = iso(dt), v = DB.move[k];
+      if(v != null) n++;
+      cells += `<button data-mv="${k}" ${dt > now ? "disabled" : ""} class="${k===iso(now)?"t":""}" style="${v!=null?`background:${EN.moves[v][1]};border-color:${EN.moves[v][1]};color:${v===5?"#201e1f":"#fff"}`:""}">${d}</button>`; }
+    yearN += n;
+    return `<div class="mrow"><p class="mname"><b>${String(m+1).padStart(2,"0")}</b>${mn}</p><div class="mcells">${cells}</div><p class="mcount">${n} / ${nd}</p></div>`; }).join("");
+  const byAct = EN.moves.map((_, k) => Object.entries(DB.move).filter(([d,v]) => v === k && d.startsWith(String(y))).length);
+  return `<section class="as mv"><div class="ash"><p class="kick"><b>##</b> movement tracker · ${y}</p>
+      <div class="yrs">${[y-1, y, y+1].map(Y => `<button data-yr="${Y}" class="${Y===y?"on":""}">${Y}</button>`).join("")}</div></div>
+    <p class="mhint">Pick what I did, then tap the day. Tap again to clear. Gym, running, cycling and swimming also tick <i>Train</i>; yoga ticks <i>Yoga</i>.</p>
+    <div class="acts">${EN.moves.map(([n,c],k) => `<button data-act="${k}" class="${k===MOVE_ACT?"on":""}" style="--c:${c}"><i></i>${n}<em>${byAct[k]}</em></button>`).join("")}</div>
+    <div class="mgrid">${rows}</div><p class="tnote">${yearN} active days in ${y}.</p></section>`;
+}
+const BOARD_ICON = ["props/suitcase.webp", "props/yoga.webp", "story/dumbbell.webp"];
+const BOARD_ACTS = [[2,3,4], [1,5], [0]];
+function boardSection(){
+  const y = new Date().getFullYear();
+  return `<section class="as"><p class="kick"><b>##</b> my vision boards</p><div class="vbs">${EN.boards.map(([t, sub], b) => {
+    const n = Object.entries(DB.move).filter(([d,v]) => BOARD_ACTS[b].includes(v) && d.startsWith(String(y))).length;
+    const ph = DB.vb[b] || [];
+    return `<div class="vb" style="--c:${["#5d9dc5","#cb9cf8","#fc4109"][b]}"><div class="vbh"><h3>${esc(t)}</h3><p>${esc(sub)}</p><span>${n} sessions in ${y}</span></div>
+      <div class="vbp">${[0,1,2,3].map(k => ph[k] ? `<button data-vb="${b}:${k}" class="ph" style="background-image:url(${ph[k]})" aria-label="Change photo"></button>` : `<button data-vb="${b}:${k}" class="add" aria-label="Add a photo">+</button>`).join("")}</div></div>`; }).join("")}</div>
+    <p class="tnote">Add my own photos — they stay on this device only and are never uploaded.</p></section>`;
+}
+const vbFile = Object.assign(document.createElement("input"), {type:"file", accept:"image/*"}); let vbSlot = null;
+vbFile.onchange = () => { const f = vbFile.files[0]; if(!f || !vbSlot) return; const img = new Image();
+  img.onload = () => { const S = 520, sc = Math.min(1, S/Math.max(img.width, img.height)), cv = document.createElement("canvas");
+    cv.width = img.width*sc; cv.height = img.height*sc; cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
+    const [b, k] = vbSlot; (DB.vb[b] = DB.vb[b] || [])[k] = cv.toDataURL("image/jpeg", .78); LS.set(DB); URL.revokeObjectURL(img.src); vbFile.value = ""; drawArea(AREA); };
+  img.src = URL.createObjectURL(f); };
 function area(i, from){
   if(i < 0){ if(AREA < 0) return; document.body.classList.remove("area-open"); AREA = -1; if(location.hash.startsWith("#/")) history.replaceState(null, "", location.pathname + location.search); lenis && lenis.start(); return; }
   i = (i + A.length) % A.length; AREA = i; watch(false); openIndex(false); reading(false); today(false); lenis && lenis.stop();
@@ -897,12 +936,21 @@ $("#area").addEventListener("click", e => {
   if(t.closest("#aPrev")) return area(AREA - 1, "side");
   if(t.closest("#aNext")) return area(AREA + 1, "side");
   if(t.closest("#aPlay")){ const i = AREA; area(-1); return go(AS[i] + 1.9, true); }
+  const yr = t.closest("[data-yr]"); if(yr){ MOVE_YEAR = +yr.dataset.yr; drawArea(AREA); return; }
+  const ac = t.closest("[data-act]"); if(ac){ MOVE_ACT = +ac.dataset.act; drawArea(AREA); return; }
+  const mv = t.closest("[data-mv]"); if(mv && !mv.disabled){ const k = mv.dataset.mv, had = DB.move[k];
+    if(had === MOVE_ACT) delete DB.move[k]; else DB.move[k] = MOVE_ACT;
+    const hk = slug(A[AREA].name), hi = MOVE_HABIT[MOVE_ACT];
+    if(hi != null && DB.move[k] === MOVE_ACT) ticks(hk, hi)[k] = 1;
+    LS.set(DB); const st = $("#area").scrollTop; drawArea(AREA); $("#area").scrollTop = st;
+    const nb = $(`#ain [data-mv="${k}"]`); if(nb && !reduce) gsap.fromTo(nb, {scale:.5}, {scale:1, duration:.45, ease:"bouncy"}); return; }
+  const vb = t.closest("[data-vb]"); if(vb){ vbSlot = vb.dataset.vb.split(":").map(Number); vbFile.click(); return; }
   const g = t.closest("[data-g]"); if(g){ DB.goal[g.dataset.g] = !DB.goal[g.dataset.g]; LS.set(DB); drawArea(AREA); return; }
   const d = t.closest(".hd button"); if(d && !d.disabled){
     const k = slug(A[AREA].name), h = +d.closest(".hb").dataset.h, tk = ticks(k, h), was = !!tk[d.dataset.d];
     if(was) delete tk[d.dataset.d]; else tk[d.dataset.d] = 1; LS.set(DB);
     const per = A[AREA].habits[h][1], hit = weekCount(k, h, new Date()) >= per;
-    drawArea(AREA);
+    const st = $("#area").scrollTop; drawArea(AREA); $("#area").scrollTop = st;
     const nb = $(`#ain .hb[data-h="${h}"] .hd button[data-d="${d.dataset.d}"]`);
     if(nb && !was && !reduce){ gsap.fromTo(nb, {scale:.6}, {scale:1, duration:.5, ease:"bouncy"});
       if(hit) gsap.fromTo($(`#ain .hb[data-h="${h}"] .hp span`), {scale:1.7}, {scale:1, duration:.7, ease:"bouncy"}); }
