@@ -8,6 +8,7 @@ import { EN } from "./content.js";
 import { ART, DEFS, PLANT } from "./art.js";
 import { mountPainting, stopPainting } from "./art-motion/index.js";
 import { mountAnimeRoom } from "./art-motion/anime-room.js";
+import { mountMinh } from "./art-motion/minh-live.js";
 gsap.registerPlugin(ScrollTrigger, CustomEase);
 
 /* =========================================================
@@ -866,7 +867,7 @@ function drawArea(i){
       <div class="ahg"><div>
         <p class="kick"><b>##</b> ${i+1} / ${A.length} · ${esc(a.arcana)}</p>
         <h2>${esc(a.name)}</h2><p class="ess">${esc(a.essence)}</p><p class="atag">${esc(a.tag)}</p><p class="astyle" id="aStyle"></p></div>
-        <div class="aart"><img class="atar" alt="" src="${a.tarot}">${a.propImg ? `<img class="aprop" alt="" src="${a.propImg}">` : ""}</div></div>
+        ${a.live ? `<div class="aart live"><img class="atar" alt="" src="${a.tarot}"><div class="minh-host" id="minhHost"><span class="minh-tip">tap me ✦</span></div></div>` : `<div class="aart"><img class="atar" alt="" src="${a.tarot}">${a.propImg ? `<img class="aprop" alt="" src="${a.propImg}">` : ""}</div>`}</div>
     </header>
     <div class="abody">
       <section class="as"><div class="ash"><p class="kick"><b>##</b> the habits that get me there</p>
@@ -882,6 +883,7 @@ function drawArea(i){
         ${a.quote ? `<blockquote>${esc(a.quote)}</blockquote>` : ""}</section>
     </div>`;  stopPainting(); const hp = mountPainting($("#ain .ahd"), k); $("#aStyle").textContent = hp ? "living painting · " + hp.style : "";
   storyInit(k); purposeInit();
+  MINH && MINH.stop(); MINH = a.live ? mountMinh($("#minhHost"), {url: "./" + a.live}) : null;
 }
 /* ---- Purpose — why it matters: four cards that arrive like a hand of cards.
    Words rise out of a mask, the numeral springs in, cards tilt toward the pointer with a moving shine.
@@ -899,7 +901,7 @@ function purposeSection(a){
       ${pose ? `<div class="pfig"><img src="${POSE_SRC[pose]}" alt="" loading="lazy" decoding="async"><span class="pfx fx-${fx}">${FX[fx]||""}</span></div>` : ""}
       <span class="shine"></span></article>`; }).join("")}</div></section>`;
 }
-let pio = null;
+let pio = null, MINH = null;
 function purposeInit(){
   pio && pio.disconnect();
   const sec = $("#ain .pur"); if(!sec) return;
@@ -1011,7 +1013,7 @@ vbFile.onchange = () => { const f = vbFile.files[0]; if(!f || !vbSlot) return; c
     const [b, k] = vbSlot; (DB.vb[b] = DB.vb[b] || [])[k] = cv.toDataURL("image/jpeg", .78); LS.set(DB); URL.revokeObjectURL(img.src); vbFile.value = ""; drawArea(AREA); };
   img.src = URL.createObjectURL(f); };
 function area(i, from){
-  if(i < 0){ if(AREA < 0) return; stopPainting(); GH && GH.stop(); GH = null; document.body.classList.remove("area-open"); AREA = -1; if(location.hash.startsWith("#/")) history.replaceState(null, "", location.pathname + location.search); lenis && lenis.start(); return; }
+  if(i < 0){ if(AREA < 0) return; stopPainting(); GH && GH.stop(); GH = null; MINH && MINH.stop(); MINH = null; document.body.classList.remove("area-open"); AREA = -1; if(location.hash.startsWith("#/")) history.replaceState(null, "", location.pathname + location.search); lenis && lenis.start(); return; }
   i = (i + A.length) % A.length; AREA = i; watch(false); openIndex(false); reading(false); today(false); lenis && lenis.stop();
   drawArea(i); document.body.classList.add("area-open"); $("#area").scrollTop = 0;
   if(location.hash !== "#/" + slug(A[i].name)) history.replaceState(null, "", "#/" + slug(A[i].name));

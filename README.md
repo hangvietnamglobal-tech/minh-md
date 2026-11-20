@@ -84,3 +84,11 @@ Money (gold-leaf mosaic), Career (cubist facets), Life Quality (infinity dots), 
 ### Vision as a story
 
 On every area page the vision is told as a story. It is pinned while you scroll, with one chapter per vision line. Words rise out of a mask one by one, and the key phrases (marked `*like this*` in `content.js`) get a painted highlighter sweep. The living painting beside the text makes a slow camera move for each chapter. The type timing follows huashu-art-motion's TY rules: a slow entrance (~0.45s) and a fast exit (~0.18s).
+
+### Minh, alive (Iki)
+
+On the Health page, Minh's own picture (`poses/stand.webp`) is a live puppet. It blinks, breathes, follows the pointer with its eyes and head, sways its hair on springs, and smiles and nods when tapped.
+
+- **How it was made:** with [Iki](https://github.com/zeikar/iki) (MIT), the open Live2D alternative. Its `iki-import-illustration` skill cut the picture into layers from hand-read landmarks, and `auto_rig_from_layers` rigged it.
+- **Hand fixes:** the skin under the eyes was inpainted, the glasses rims were restored on the face, and a gap behind the jaw was filled.
+- **Files:** `public/iki/minh.iki` is the model. `public/iki/minh-under.webp` is a still underlay that hides layer seams on a turn. `src/art-motion/minh-live.js` plays it with `@ikijs/engine`.

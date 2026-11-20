@@ -342,6 +342,13 @@ body.area-open .area{display:block}
 .ahd .atag{font-family:var(--f-m);font-size:13px;opacity:.75;margin:18px 0 42px}
 .aart{position:relative;height:clamp(240px,40vh,420px);display:flex;align-items:flex-end;justify-content:flex-end;gap:clamp(12px,2vw,32px);padding-bottom:34px;box-sizing:content-box}
 .aart .atar{height:100%;width:auto;flex:none;border-radius:14px;box-shadow:0 30px 50px -20px rgba(0,0,0,.45);transform:rotate(-3deg)}
+.aart.live{display:block;height:clamp(300px,52vh,560px);padding-bottom:0}
+.aart.live .atar{position:absolute;left:0;bottom:24px;height:46%;transform:rotate(-7deg);z-index:0}
+.minh-host{position:absolute;inset:0 0 0 18%;z-index:1}
+.minh-box{position:absolute;right:0;bottom:0;background:center/100% 100% no-repeat;filter:drop-shadow(0 24px 30px rgba(60,30,80,.28))}
+.minh-live{width:100%;height:100%;display:block;cursor:pointer}
+.minh-tip{position:absolute;right:6%;top:12%;font-family:var(--f-m);font-size:11px;letter-spacing:.08em;text-transform:uppercase;background:rgba(255,255,255,.75);padding:5px 10px;border-radius:20px;pointer-events:none;animation:tipb 2.4s ease-in-out infinite}
+@keyframes tipb{50%{transform:translateY(-4px)}}
 .aart .aprop{order:-1;flex:0 1 auto;width:auto;max-width:38%;max-height:62%;object-fit:contain;filter:drop-shadow(0 18px 20px rgba(0,0,0,.28))}
 .abody{max-width:1180px;margin:0 auto;padding:40px 24px 120px;display:grid;gap:26px}
 .as{background:#fbf6ec;border-radius:22px;padding:28px;box-shadow:0 1px 0 rgba(0,0,0,.05),0 22px 40px -30px rgba(60,40,0,.55)}
@@ -449,7 +456,7 @@ body.is-watching .openArea,body.index-open .openArea,body.area-open .openArea{tr
 .ath i{width:20px;height:20px;border-radius:6px;border:1.5px solid rgba(32,30,31,.3);display:grid;place-items:center;font-style:normal;font-size:12px;color:#fff;flex:none}
 .ath.on i{background:var(--accent);border-color:var(--accent)}.ath em{font-style:normal;font-family:var(--f-m);font-size:11px;opacity:.55;margin-left:4px}
 @media (max-width:760px){
-  .ahg{grid-template-columns:1fr}.aart{height:200px}.ahd h2{font-size:64px}
+  .ahg{grid-template-columns:1fr}.aart{height:200px}.aart.live{height:320px}.ahd h2{font-size:64px}
   .vstage{grid-template-columns:1fr;grid-template-rows:34vh 1fr;gap:18px;padding:12px 18px 18px;align-items:stretch}
   .vpaint{order:-1;height:auto;border-radius:18px}.vtext{height:auto}.vline{font-size:27px}.vnum{font-size:52px}
   .ahd::after{background:linear-gradient(180deg,var(--c) 0%,color-mix(in srgb,var(--c) 80%,transparent) 38%,transparent 62%)}
