@@ -10,6 +10,7 @@ import { mountPainting, stopPainting } from "./art-motion/index.js";
 import { mountAnimeRoom, ROOM_SETS } from "./art-motion/anime-room.js";
 import { mountMinh } from "./art-motion/minh-live.js";
 import { mountAges, thumbs, ERAS } from "./art-motion/ages.js";
+import { mountStair, setScale } from "./art-motion/staircase.js";
 gsap.registerPlugin(ScrollTrigger, CustomEase);
 
 /* =========================================================
@@ -652,7 +653,7 @@ function onWheel(dy){
   if(fresh){ G.peak = a; G.low = 1e9; G.fell = false; G.sum = 0; G.armed = true; }
   G.sum += a; if(G.armed && G.sum >= 10){ G.armed = false; step(sg); }
 }
-const conducted = () => FLICK && !document.body.classList.contains("index-open") && !document.body.classList.contains("reading") && !document.body.classList.contains("today-open") && !document.body.classList.contains("is-loading");
+const conducted = () => FLICK && !document.body.classList.contains("index-open") && !document.body.classList.contains("reading") && !document.body.classList.contains("today-open") && !document.body.classList.contains("is-loading") && !document.body.classList.contains("stair-open");
 function route(d){
   if(conducted() && !d.event.ctrlKey){
     if(d.event.type === "wheel"){ if(watching) watch(false); onWheel(d.deltaY); }
@@ -758,6 +759,7 @@ const CARDS = [
   {g:"◎", t:"the wheel of life", time:T_WHEEL + 5, wheel:true, bg:"#f4efe8"},
   {g:"— m.", t:"This file will change as I do.", time:T_OUT + 6.4, art:"moon", bg:"#121634"},
   {g:"⌛", t:"Minh through the ages · 18 eras", ages:true, bg:"#1c1a17"},
+  {g:"✦", t:"the staircase · where am I today?", stair:true, bg:"#0a1a6a"},
   {g:"✓", t:"today · tick it every night", today:true, bg:"#fc4109"},
   {g:"#", t:"read the .md file", md:true}
 ];
@@ -774,7 +776,7 @@ function openIndex(on){
 }
 $("#pill").onclick = () => openIndex(!document.body.classList.contains("index-open"));
 $("#cards").onclick = e => { const b = e.target.closest(".card"); if(!b) return; const c = CARDS[+b.dataset.i];
-  openIndex(false); if(c.area != null) return area(c.area); if(c.ages) return ages(true); if(c.today) return today(true); if(c.md) return reading(true); go(c.time, true); };
+  openIndex(false); if(c.area != null) return area(c.area); if(c.ages) return ages(true); if(c.stair) return stair(true); if(c.today) return today(true); if(c.md) return reading(true); go(c.time, true); };
 $("#mug").onclick = $("#brand").onclick = () => { openIndex(false); reading(false); go(0, true); };
 
 /* ---------- reading mode: the plain .md ---------- */
@@ -1063,7 +1065,7 @@ $("#area").addEventListener("click", e => {
   }
 });
 addEventListener("keydown", e => { if(AREA < 0) return; if(e.key === "Escape") area(-1); if(e.key === "ArrowRight") area(AREA + 1, "side"); if(e.key === "ArrowLeft") area(AREA - 1, "side"); });
-function fromHash(){ const m = location.hash.match(/^#\/([a-z-]+)/); if(!m) return; if(m[1] === 'ages') return ages(true); const i = A.findIndex(a => slug(a.name) === m[1]); if(i >= 0) area(i); }
+function fromHash(){ const m = location.hash.match(/^#\/([a-z-]+)/); if(!m) return; if(m[1] === 'ages') return ages(true); if(m[1] === 'scale') return stair(true); const i = A.findIndex(a => slug(a.name) === m[1]); if(i >= 0) area(i); }
 addEventListener("hashchange", fromHash);
 // a pill in the HUD that opens the room you are standing in
 let pillArea = -2;
@@ -1146,3 +1148,63 @@ $("#agNext").onclick = () => { AG.stopRun(); AG.go(AG.era + 1); };
 $("#agRun").onclick = () => { if($("#agRun").textContent.startsWith("■")){ AG.stopRun(); agSync(AG.era, false); } else AG.speedrun(); };
 $("#agStrip").onclick = e => { const b = e.target.closest("[data-e]"); if(!b) return; AG.stopRun(); AG.go(+b.dataset.e); };
 addEventListener("keydown", e => { if(!document.body.classList.contains("ages-open")) return; if(e.key === "Escape") ages(false); if(e.key === "ArrowRight") $("#agNext").click(); if(e.key === "ArrowLeft") $("#agPrev").click(); });
+
+/* ---------- the staircase: the scale as a place you stand each evening (src/art-motion/staircase.js) ---------- */
+const STEP_UP = [  // EN.scale order, top → bottom: for each level, the one step that lifts you (or keeps you there)
+  "Simply be. Nothing to add.", "Rest in the stillness — keep it with one quiet minute tonight.", "Share it: tell someone what made you glad today.",
+  "Love without keeping score — one kind act nobody will know about.", "Learn one thing today and use it before you sleep.", "Trust the process — breathe out what you can't control.",
+  "Offer help to one person today, freely.", "Let go of one thing that isn't yours to carry.", "You are on the threshold. Take one brave action today — small is fine.",
+  "Ask one person for honest feedback, and only listen.", "Pause. Ten slow breaths before you answer anyone.", "Write three things you already have enough of.",
+  "Name the fear on paper, then take one tiny step toward it.", "Let it be felt. Call someone who loves you.", "Do one five-minute thing: make the bed, open the window, walk outside.",
+  "Turn the mistake into one repair you can make today.", "Say one kind sentence to yourself, out loud. You are allowed to begin again." ];
+const lvlNum = i => parseInt(EN.scale[i][0], 10);
+DB.scale = DB.scale || {};
+document.body.insertAdjacentHTML("beforeend", `<section class="stair" id="stair" aria-label="The staircase" data-lenis-prevent>
+  <div class="stcanvas" id="stCanvas"></div>
+  <div class="stpanel">
+    <p class="kick"><b>##</b> the staircase · 20 → 1000</p>
+    <h2 class="sth">Where am I <em>today?</em></h2>
+    <p class="sthint">Tap the step that feels true tonight. Above 200 — power that nourishes. Below — force that drains.</p>
+    <div class="stcard" id="stCard"><b id="stNum"></b><span id="stName"></span><p id="stDesc"></p><p class="stup"><i>one step up ·</i> <span id="stUp"></span></p><p class="stsaved" id="stSaved"></p></div>
+    <div class="sthist"><p class="kick"><b>##</b> the last 30 evenings</p><svg id="stChart" viewBox="0 0 300 120" preserveAspectRatio="none"></svg><p class="stins" id="stIns"></p></div>
+  </div>
+  <button class="pill close" id="stClose">close ✕</button>
+</section>`);
+setScale(EN.scale);
+let STAIR = null;
+function stShow(i, saved){
+  if(i < 0) return; const L = EN.scale[i];
+  $("#stNum").textContent = L[0]; $("#stName").textContent = L[1]; $("#stDesc").textContent = L[2]; $("#stUp").textContent = STEP_UP[i];
+  const c = $("#stCard"); c.classList.toggle("lit", i <= 8); c.classList.toggle("gate", i === 8);
+  if(saved != null) $("#stSaved").textContent = saved;
+}
+function stChart(){
+  const days = [...Array(30)].map((_,k) => { const d = new Date(); d.setDate(d.getDate() - 29 + k); return iso(d); });
+  const pts = days.map((d,k) => DB.scale[d] != null ? [k * 300/29, 8 + DB.scale[d] / 16 * 104, DB.scale[d]] : null);
+  const y200 = 8 + 8/16 * 104, real = pts.filter(Boolean);
+  $("#stChart").innerHTML = `<line x1="0" x2="300" y1="${y200}" y2="${y200}" class="th"/>` +
+    (real.length > 1 ? `<polyline points="${real.map(p => p[0].toFixed(1)+","+p[1].toFixed(1)).join(" ")}" class="ln"/>` : "") +
+    real.map(p => `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3.2" class="${p[2] <= 8 ? "up" : "dn"}"/>`).join("");
+  // insight: the evenings after days you showed up for your habits
+  const ticksOn = d => Object.values(DB.ah || {}).reduce((n, area) => n + Object.values(area).filter(h => h[d]).length, 0);
+  const vals = Object.entries(DB.scale), avg = a => a.length ? Math.round(a.reduce((x,y) => x + y, 0) / a.length) : null;
+  const good = avg(vals.filter(([d]) => ticksOn(d) >= 3).map(([,i]) => lvlNum(i))), rest = avg(vals.filter(([d]) => ticksOn(d) < 3).map(([,i]) => lvlNum(i)));
+  const all = avg(real.map(p => lvlNum(p[2])));
+  $("#stIns").textContent = !real.length ? "Your evenings will gather here like stars." :
+    good != null && rest != null ? `On days you tick 3+ habits you stand around ${good}; on the others, ${rest}.` : `${real.length} evening${real.length > 1 ? "s" : ""} so far · average ${all}.`;
+}
+function stair(on){
+  document.body.classList.toggle("stair-open", on);
+  if(on){ watch(false); lenis && lenis.stop(); if(AREA >= 0) area(-1); if(document.body.classList.contains("ages-open")) ages(false);
+    if(!location.hash.startsWith("#/scale")) history.replaceState(null, "", "#/scale");
+    const today = DB.scale[iso(new Date())];
+    if(!STAIR) STAIR = mountStair($("#stCanvas"), {base: "./",
+      onPick: i => { DB.scale[iso(new Date())] = i; LS.set(DB); stShow(i, `✓ saved for tonight · ${new Date().toLocaleDateString("en-GB", {day:"numeric", month:"short"})}`); stChart(); },
+      onHover: i => stShow(i >= 0 ? i : (DB.scale[iso(new Date())] ?? 8)) });
+    STAIR.set(today ?? 8, true); stShow(today ?? 8, today != null ? "✓ already chosen tonight — tap another step to change" : ""); stChart();
+  } else { if(STAIR){ STAIR.stop(); STAIR = null; } lenis && lenis.start(); if(location.hash.startsWith("#/scale")) history.replaceState(null, "", location.pathname); }
+}
+$("#stClose").onclick = () => stair(false);
+addEventListener("keydown", e => { if(!document.body.classList.contains("stair-open")) return; if(e.key === "Escape") stair(false); });
+$("#sc-scale .sct").insertAdjacentHTML("beforeend", `<button class="pill stgo" id="stGo">✦ climb the staircase ↗</button>`);
+$("#stGo").onclick = () => stair(true);
