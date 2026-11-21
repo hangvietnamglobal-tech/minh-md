@@ -68,7 +68,7 @@ function puppet(g, key, x, bottom, h, { rot = 0, sx = 1, sy = 1, light = 'rgba(2
   g.save(); g.translate(x, bottom); g.rotate(rot); g.scale(sx, sy); g.drawImage(SPR, -w / 2, -h, w, h); g.restore();
 }
 /* ---------- the cat (orange & white, cel) ---------- */
-function cat(g, x, y, s, { pose = 'sit', t = 0, old = false }) {
+export function cat(g, x, y, s, { pose = "sit", t = 0, old = false }) {
   const O = old ? '#e8a868' : '#f3a24c', OS = old ? '#c88a52' : '#d27a2c', Wt = '#fffaf2', WS = '#e2d8ca';
   g.save(); g.translate(x, y); g.scale(s, s); g.lineCap = 'round'; g.lineJoin = 'round';
   const blink = (t % 3.1) > 2.95, tail = Math.sin(t * 2.6) * .35;

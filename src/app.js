@@ -9,6 +9,7 @@ import { ART, DEFS, PLANT } from "./art.js";
 import { mountPainting, stopPainting } from "./art-motion/index.js";
 import { mountAnimeRoom, ROOM_SETS } from "./art-motion/anime-room.js";
 import { mountMinh } from "./art-motion/minh-live.js";
+import { mountAges, thumbs, ERAS } from "./art-motion/ages.js";
 gsap.registerPlugin(ScrollTrigger, CustomEase);
 
 /* =========================================================
@@ -756,6 +757,7 @@ const CARDS = [
     : i === IX("Energy") ? [c, {g:"200", t:"the scale · 20 → 1000", time:T_SCALE + 3.2, art:"energy", bg:"#0d1430"}] : [c]),
   {g:"◎", t:"the wheel of life", time:T_WHEEL + 5, wheel:true, bg:"#f4efe8"},
   {g:"— m.", t:"This file will change as I do.", time:T_OUT + 6.4, art:"moon", bg:"#121634"},
+  {g:"⌛", t:"Minh through the ages · 18 eras", ages:true, bg:"#1c1a17"},
   {g:"✓", t:"today · tick it every night", today:true, bg:"#fc4109"},
   {g:"#", t:"read the .md file", md:true}
 ];
@@ -772,7 +774,7 @@ function openIndex(on){
 }
 $("#pill").onclick = () => openIndex(!document.body.classList.contains("index-open"));
 $("#cards").onclick = e => { const b = e.target.closest(".card"); if(!b) return; const c = CARDS[+b.dataset.i];
-  openIndex(false); if(c.area != null) return area(c.area); if(c.today) return today(true); if(c.md) return reading(true); go(c.time, true); };
+  openIndex(false); if(c.area != null) return area(c.area); if(c.ages) return ages(true); if(c.today) return today(true); if(c.md) return reading(true); go(c.time, true); };
 $("#mug").onclick = $("#brand").onclick = () => { openIndex(false); reading(false); go(0, true); };
 
 /* ---------- reading mode: the plain .md ---------- */
@@ -1061,7 +1063,7 @@ $("#area").addEventListener("click", e => {
   }
 });
 addEventListener("keydown", e => { if(AREA < 0) return; if(e.key === "Escape") area(-1); if(e.key === "ArrowRight") area(AREA + 1, "side"); if(e.key === "ArrowLeft") area(AREA - 1, "side"); });
-function fromHash(){ const m = location.hash.match(/^#\/([a-z-]+)/); if(!m) return; const i = A.findIndex(a => slug(a.name) === m[1]); if(i >= 0) area(i); }
+function fromHash(){ const m = location.hash.match(/^#\/([a-z-]+)/); if(!m) return; if(m[1] === 'ages') return ages(true); const i = A.findIndex(a => slug(a.name) === m[1]); if(i >= 0) area(i); }
 addEventListener("hashchange", fromHash);
 // a pill in the HUD that opens the room you are standing in
 let pillArea = -2;
@@ -1113,3 +1115,34 @@ gsap.to("#openHer img, #tableHerImg", {scaleY:1.008, y:-3, duration:2.4, ease:"s
 gsap.to("#moon svg", {rotate:4, duration:6, ease:"sine.inOut", yoyo:true, repeat:-1});
 addEventListener("load", () => ScrollTrigger.refresh());
 onTime(0);
+
+/* ---------- Minh through the ages: huashu-art-motion's speedrun, with Minh (see src/art-motion/ages.js) ---------- */
+document.body.insertAdjacentHTML("beforeend", `<section class="ages" id="ages" aria-label="Minh through the ages" data-lenis-prevent>
+  <div class="agtop"><span>MINH / ART &amp; MOTION</span><span>after huashu-art-motion · ${ERAS.length} eras</span></div>
+  <h2>Minh, <em>through the ages</em></h2>
+  <p class="agsub">One room, one cup of tea, one cat — painted by ${ERAS.length} eras of art, from the cave to now. Every painting is alive.</p>
+  <div class="aghero"><div class="agstage" id="agStage"></div><div class="agcap"><b id="agYear"></b><span id="agName"></span></div></div>
+    <div class="agctl"><button class="pill" id="agPrev" aria-label="Earlier era">←</button><button class="pill" id="agRun">▶ speedrun</button><button class="pill" id="agNext" aria-label="Later era">→</button><button class="pill" id="agClose">close ✕</button></div>
+  <div class="agstrip" id="agStrip">${ERAS.map((e,i) => `<button data-e="${i}"><span class="agth"></span><i>${e.label}</i><small>${e.name}</small></button>`).join("")}</div>
+  <p class="agcredit">Technique after <a href="https://github.com/alchaincyf/huashu-art-motion" target="_blank" rel="noopener">huashu-art-motion</a> (MIT) · Minh's own character art, repainted by each era.</p>
+</section>`);
+let AG = null, agThumbs = false;
+function agSync(i, running){ const e = ERAS[i]; if(!e) return; $("#agYear").textContent = e.label; $("#agName").textContent = e.name;
+  document.querySelectorAll("#agStrip button").forEach((b,k) => b.classList.toggle("on", k === i));
+  const on = $(`#agStrip button[data-e="${i}"]`); on && on.scrollIntoView({block:"nearest", inline:"center", behavior: reduce ? "auto" : "smooth"});
+  $("#agRun").textContent = running ? "■ stop" : "▶ speedrun"; }
+function ages(on){
+  document.body.classList.toggle("ages-open", on);
+  if(on){ watch(false); lenis && lenis.stop(); if(AREA >= 0) area(-1);
+    if(!location.hash.startsWith("#/ages")) history.replaceState(null, "", "#/ages");
+    if(!AG) AG = mountAges($("#agStage"), {onEra: agSync});
+    agSync(AG.era, false);
+    if(!agThumbs){ agThumbs = true; thumbs("./", 288, 162).then(cs => cs.forEach((c,i) => { const s = $(`#agStrip button[data-e="${i}"] .agth`); s && s.appendChild(c); })); }
+  } else { if(AG){ AG.stop(); AG = null; } lenis && lenis.start(); if(location.hash.startsWith("#/ages")) history.replaceState(null, "", location.pathname); }
+}
+$("#agClose").onclick = () => ages(false);
+$("#agPrev").onclick = () => { AG.stopRun(); AG.go(AG.era - 1); };
+$("#agNext").onclick = () => { AG.stopRun(); AG.go(AG.era + 1); };
+$("#agRun").onclick = () => { if($("#agRun").textContent.startsWith("■")){ AG.stopRun(); agSync(AG.era, false); } else AG.speedrun(); };
+$("#agStrip").onclick = e => { const b = e.target.closest("[data-e]"); if(!b) return; AG.stopRun(); AG.go(+b.dataset.e); };
+addEventListener("keydown", e => { if(!document.body.classList.contains("ages-open")) return; if(e.key === "Escape") ages(false); if(e.key === "ArrowRight") $("#agNext").click(); if(e.key === "ArrowLeft") $("#agPrev").click(); });

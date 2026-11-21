@@ -92,3 +92,11 @@ On the Health page, Minh's own picture (`poses/stand.webp`) is a live puppet. It
 - **How it was made:** with [Iki](https://github.com/zeikar/iki) (MIT), the open Live2D alternative. Its `iki-import-illustration` skill cut the picture into layers from hand-read landmarks, and `auto_rig_from_layers` rigged it.
 - **Hand fixes:** the skin under the eyes was inpainted, the glasses rims were restored on the face, and a gap behind the jaw was filled.
 - **Files:** `public/iki/minh.iki` is the model. `public/iki/minh-under.webp` is a still underlay that hides layer seams on a turn. `src/art-motion/minh-live.js` plays it with `@ikijs/engine`.
+
+### Minh through the ages (huashu-art-motion speedrun)
+
+The `#/ages` page (index card ⌛) applies huashu-art-motion's art-history speedrun to Minh. One fixed room is repainted by 18 eras, from cave painting, Egypt, Roman mosaic and Gothic through Rembrandt, ink wash, Monet, Seurat, Van Gogh, Klimt, Bauhaus, Matisse, pop art, Kusama, 8-bit, anime watercolour and vaporwave to 2026.
+
+- **The character:** Minh's own picture is repainted by each era's medium (posterised, inked, duotoned or pixelated), then the whole frame goes through that era's renderer.
+- **Speedrun:** the eras play on a 128 BPM grid that speeds up. Each transition grows out of the next era (mosaic tiles, dots, or a brushed wipe), and the year counter rolls with it.
+- **Code:** `src/art-motion/ages.js`.
