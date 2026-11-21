@@ -491,24 +491,20 @@ tl.to(".sq", {y:-30, opacity:0, duration:.4, stagger:.04, ease:"power2.in"}, T_S
 
 /* ---- interlude: the scale, 20 → 1000 ---- */
 $("#sc-scale .scl-say").innerHTML = words("Above 200 — *power that nourishes.* Below — force that drains.");
-$("#ladder").innerHTML = EN.scale.map(l => `<div class="rung ${l[0]==="200"?"th":(parseInt(l[0])>200?"up":"")}"><b>${esc(l[0])}</b><b>${esc(l[1])}</b><span>${esc(l[2])}</span></div>`).join("");
 $("#ways").innerHTML = EN.ways.map(w => `<p><b>${esc(w[0])}</b>${esc(w[1])}</p>`).join("");
-gsap.set("#sc-scale .panel", {yPercent:100}); gsap.set(".rung", {scaleX:0, opacity:0}); gsap.set("#ways p", {opacity:0, y:16});
+gsap.set("#sc-scale .panel", {yPercent:100}); gsap.set("#ways p", {opacity:0, y:16});
 gsap.set("#sc-scale .say .wd > span", {yPercent:150});
 crumb(T_SCALE - .3, "the scale", true);
-const RUNGS = [...document.querySelectorAll(".rung")];
-const rungAt = k => () => { const r = RUNGS[k].getBoundingClientRect(); return {x:r.left - 16, y:r.top + r.height/2}; };
 tl.to("#sc-scale .panel", {yPercent:0, duration:1.1, ease:"power3.inOut"}, T_SCALE - .4)
   .to("#sc-scale .kick .k", {opacity:1, duration:.02, stagger:.018, ease:"none"}, T_SCALE + .6)
-  .to([...RUNGS].reverse(), {scaleX:1, opacity:1, duration:.45, stagger:.08, ease:"power3.out"}, T_SCALE + .7)
   .to("#sc-scale .say .wd > span", {yPercent:0, duration:.75, stagger:.06, ease:"reveal"}, T_SCALE + 1.4);
-// the dot climbs from shame to courage, then on up to love
-[16,12,8,3].forEach((k,j) => tl.to("#dot", {left:() => rungAt(k)().x, top:() => rungAt(k)().y, duration:j ? .55 : .3, ease:"hop"}, T_SCALE + 2.6 + j*.75));
+// the red dot steps aside: Minh herself climbs the staircase painting (mounted at the end of this file)
+tl.to("#dot", {opacity:0, duration:.3}, T_SCALE + .2).to("#dot", {opacity:1, duration:.3}, T_SCALE + 9.9);
 rest(T_SCALE + 3.2, 10);
 rest(T_SCALE + 5.2, 4);
 tl.to("#ways p", {opacity:1, y:0, duration:.5, stagger:.35, ease:"bouncy"}, T_SCALE + 5.4);
 rest(T_SCALE + 7.4, 34);
-tl.to(["#ways p", ...RUNGS], {opacity:0, duration:.4, stagger:.01}, T_SCALE + 9)
+tl.to("#ways p", {opacity:0, duration:.4, stagger:.01}, T_SCALE + 9)
   .to("#sc-scale .panel", {yPercent:-100, duration:1.1, ease:"power3.inOut"}, T_SCALE + 9.6)
   .to("#dot", {left:"50vw", top:() => propTop(), duration:.6, ease:"hop"}, T_SCALE + 10);
 
@@ -1206,5 +1202,9 @@ function stair(on){
 }
 $("#stClose").onclick = () => stair(false);
 addEventListener("keydown", e => { if(!document.body.classList.contains("stair-open")) return; if(e.key === "Escape") stair(false); });
-$("#sc-scale .sct").insertAdjacentHTML("beforeend", `<button class="pill stgo" id="stGo">✦ climb the staircase ↗</button>`);
+$("#sc-scale .sct").insertAdjacentHTML("beforeend", `<button class="pill stgo" id="stGo">✦ where am I tonight? ↗</button>`);
 $("#stGo").onclick = () => stair(true);
+// the film's scale scene IS the staircase: Minh climbs to tonight's step when the scene comes in; tap a step to choose it
+const SCL = mountStair($("#sclStair"), {base: "./", paused: () => document.body.classList.contains("stair-open"),
+  onPick: i => { DB.scale[iso(new Date())] = i; LS.set(DB); stair(true); stShow(i, `✓ saved for tonight · ${new Date().toLocaleDateString("en-GB", {day:"numeric", month:"short"})}`); STAIR && STAIR.set(i, true); stChart(); }});
+SCL.set(DB.scale[iso(new Date())] ?? 8, true);

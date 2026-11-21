@@ -141,11 +141,6 @@ body.is-loading .hud,body.is-loading .dot{opacity:0}
 .sq i{font-family:var(--f-s);color:var(--accent);font-size:clamp(28px,2.6vw,48px);line-height:1;display:block}
 .sq b{display:block;font-weight:600;font-size:clamp(16px,1.35vw,24px);margin:.5vh 0 .6vh;letter-spacing:-.01em}
 .sq span{display:block;font-size:clamp(11px,.85vw,15px);line-height:1.38;opacity:.85}
-.ladder{position:absolute;right:var(--pad);top:11vh;bottom:6vh;width:min(46vw,820px);display:flex;flex-direction:column;gap:.45vh}
-.rung{flex:1;display:grid;grid-template-columns:5.2em 9em 1fr;align-items:center;gap:1em;padding:0 1em;border-radius:8px;font-family:var(--f-m);font-size:clamp(10px,.82vw,14px);background:rgba(255,255,255,.06);transform-origin:0 50%}
-.rung b{font-family:var(--f-b,inherit);font-weight:600;font-size:1.15em}
-.rung.up{background:linear-gradient(90deg,rgba(255,214,120,.32),rgba(255,214,120,.06))}
-.rung.th{background:linear-gradient(90deg,#fc4109,rgba(252,65,9,.25));color:#fff}
 .ways{display:grid;grid-template-columns:1fr 1fr;gap:1.4vh 1.6vw;margin-top:4vh}
 .ways p{font-size:clamp(12px,.95vw,16px);line-height:1.35;opacity:.9}
 .ways p b{display:block;font-size:1.25em;color:#ffd36b;font-weight:600;margin-bottom:.2em}
@@ -178,7 +173,7 @@ body.today-open .today{display:block}
 @media (max-width:760px){.tgrid{grid-template-columns:1fr}.hab{font-size:12px}.hab button{width:20px;height:20px}
   .sxt,.sct{width:calc(100vw - 2*var(--pad))}
   .sixg{left:var(--pad);right:var(--pad);top:auto;bottom:5vh;width:auto;gap:8px}.sq span{display:none}
-  .ladder{left:var(--pad);right:var(--pad);top:auto;bottom:4vh;height:48vh;width:auto}.rung{grid-template-columns:4.6em 7em 0}.rung span{display:none}.ways{display:none}}
+  .ways{display:none}}
 #wheelSvg{position:absolute;right:1vw;top:52%;width:min(40vw,68vh);transform:translateY(-46%);overflow:visible}
 #wheelSvg circle.ringc,#wheelSvg line{fill:none;stroke:rgba(32,30,31,.22);stroke-width:1.2}
 #wheelSvg text{font-family:var(--f-m);font-size:14px;fill:var(--ink)}
@@ -539,3 +534,10 @@ body.stair-open #dot,body.stair-open #dot2{opacity:0}
 #stClose{position:absolute;right:max(16px,3vw);top:max(16px,3vh)}
 .stgo{margin-top:2.4vh}
 @media (max-width:760px){.stpanel{top:auto;bottom:12px;left:12px;right:12px;width:auto;gap:8px}.sth,.sthint,.stpanel>.kick{display:none}.sthist{display:none}.stcard>span{font-size:26px}}
+
+
+/* the film's scale scene: the staircase painting fills the panel, the words sit on the left over a soft shade */
+.scl-stair{position:absolute;inset:0}
+#sc-scale .sct{z-index:2;pointer-events:none}#sc-scale .sct .stgo{pointer-events:auto}
+#sc-scale .panel::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(90deg,rgba(3,10,58,.78),rgba(3,10,58,.35) 38%,rgba(3,10,58,0) 55%)}
+@media (max-width:760px){#sc-scale .panel::after{background:linear-gradient(180deg,rgba(3,10,58,.8),rgba(3,10,58,0) 40%)}}

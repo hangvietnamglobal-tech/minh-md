@@ -12,7 +12,7 @@ const N = 17;                                    // EN.scale order: 0 = Enlighte
 const THRESH = 8;                                // index of 200 · Courage
 const stepOf = idx => N - 1 - idx;               // 0 = bottom step
 
-export function mountStair(host, { base = './', onPick, onHover } = {}) {
+export function mountStair(host, { base = './', onPick, onHover, paused } = {}) {
   const cv = off(10, 10), main = cv.getContext('2d'), auCv = off(10, 10), auG = auCv.getContext('2d'); let g = main, auT = -1; cv.className = 'stair-cv'; host.appendChild(cv);
   const sky = off(10, 10), meadow = off(10, 10);
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -173,7 +173,7 @@ export function mountStair(host, { base = './', onPick, onHover } = {}) {
     g.restore();
   }
   const frame = now => {
-    raf = requestAnimationFrame(frame); if (!visible || document.hidden) return;
+    raf = requestAnimationFrame(frame); if (!visible || document.hidden || (paused && paused())) { walkT = now; return; }
     const t = (now - t0) / 1000;
     if (Math.abs(target - pos) > .001) { const dir = Math.sign(target - pos); pos += dir * Math.min(Math.abs(target - pos), (now - walkT) / 1000 * 3.2); walkT = now; walking = true; }
     else { if (walking) landT = t; walking = false; walkT = now; }
