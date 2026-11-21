@@ -751,7 +751,7 @@ const CARDS = [
   {g:"7", t:"seven things, every day", time:25.6, art:"notepad", bg:"#e83729"},
   ...A.map((a,i) => ({g:String(i+1), t:`${a.name} · ${a.arcana.split(" · ")[1]}`, area:i, time:AS[i] + 1.9, art:a.prop, tarot:a.tarot, bg:a.color})).flatMap((c,i) => i === PAUSE_AFTER ? [c, {g:"∴", t:"the pause", time:T_PAUSE + 3.6, art:"lotus", bg:"#f4efe8"}]
     : i === IX("Money") ? [c, {g:"VI", t:"what attracts money", time:T_SIX + 7, art:"coins", bg:"#f8d867"}]
-    : i === IX("Energy") ? [c, {g:"200", t:"the scale · 20 → 1000", time:T_SCALE + 3.2, art:"energy", bg:"#0d1430"}] : [c]),
+    : [c]),
   {g:"◎", t:"the wheel of life", time:T_WHEEL + 5, wheel:true, bg:"#f4efe8"},
   {g:"— m.", t:"This file will change as I do.", time:T_OUT + 6.4, art:"moon", bg:"#121634"},
   {g:"⌛", t:"Minh through the ages · 18 eras", ages:true, bg:"#1c1a17"},
