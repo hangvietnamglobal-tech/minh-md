@@ -7,7 +7,7 @@ import Lenis from "lenis";
 import { EN } from "./content.js";
 import { ART, DEFS, PLANT } from "./art.js";
 import { mountPainting, stopPainting } from "./art-motion/index.js";
-import { mountAnimeRoom } from "./art-motion/anime-room.js";
+import { mountAnimeRoom, ROOM_SETS } from "./art-motion/anime-room.js";
 import { mountMinh } from "./art-motion/minh-live.js";
 gsap.registerPlugin(ScrollTrigger, CustomEase);
 
@@ -947,7 +947,6 @@ function visionStory(a){
   </section>`;
 }
 let VJ = -1, vio = null, GH = null;
-const STORY_ANIME = {health: true};     // these areas tell their vision as hand-painted anime landscapes, one per chapter
 const CAM_SOFT = [[1.04, 0, 0], [1.08, -2, 1], [1.06, 2, -1], [1.1, -1, -2], [1.05, 2, 1], [1.08, 0, 2]];
 function storyChapter(j, instant){
   const root = $("#ain .vst"); if(!root || j === VJ) return;
@@ -969,7 +968,7 @@ function storyInit(k){
   vio && vio.disconnect(); VJ = -1;
   const root = $("#ain .vst"); if(!root) return;
   GH && GH.stop(); GH = null;
-  const hp = STORY_ANIME[k] ? (GH = mountAnimeRoom(root.querySelector(".vcam"))) : mountPainting(root.querySelector(".vcam"), k, {budget:300000, cls:"vcv"});
+  const hp = ROOM_SETS[k] ? (GH = mountAnimeRoom(root.querySelector(".vcam"), {set: k})) : mountPainting(root.querySelector(".vcam"), k, {budget:300000, cls:"vcv"});
   root.classList.toggle("anime", !!GH);
   root.querySelector(".vcap").textContent = hp ? hp.style : "";
   storyChapter(0, true); if(reduce) return;

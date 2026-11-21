@@ -52,7 +52,7 @@ const lerp2 = (a, b, p) => [lerp(a[0], b[0], p), lerp(a[1], b[1], p)];
    squash & stretch, pose swaps on a "pop". The window light is laid over her (source-atop) so she sits in
    the room's light; at night and at sunset the room tint covers her too. */
 const IMG = {};
-const SPRITES = { stand: 'poses/stand.webp', wave: 'poses/wave.webp', yoga: 'poses/yoga.webp', laugh: 'poses/laugh.webp', walk: 'poses/walk.webp', read: 'poses/read.webp', heart: 'poses/heart.webp', old: 'poses/her-old.webp' };
+const SPRITES = { stand: 'poses/stand.webp', wave: 'poses/wave.webp', yoga: 'poses/yoga.webp', laugh: 'poses/laugh.webp', walk: 'poses/walk.webp', read: 'poses/read.webp', heart: 'poses/heart.webp', old: 'poses/her-old.webp', meditate: 'poses/meditate.webp', money: 'poses/money.webp', career: 'poses/career.webp', travel: 'poses/travel.webp' };
 function loadSprites(base) { for (const [k, src] of Object.entries(SPRITES)) if (!IMG[k]) { const im = new Image(); im.decoding = 'async'; im.src = base + src; IMG[k] = im; } }
 const SPR = off(10, 10);
 function puppet(g, key, x, bottom, h, { rot = 0, sx = 1, sy = 1, light = 'rgba(255,236,190,.22)', from = 'left' } = {}) {
@@ -109,7 +109,7 @@ const LIGHT = [
   { wall: ['#7f8aa0', '#5f6a84', '#3f4a62'], sky: ['#13314a', '#3f6f8a'] },     // night
   { wall: ['#fbe0b8', '#f0c890', '#d8a26a'], sky: ['#f2a27f', '#fbe0a8'] },     // golden afternoon
 ];
-function room(g, j) {
+function room(g, j, furn = j === 3 ? 'armchair' : 'table') {
   const L = LIGHT[j], r = rng(40 + j), night = j === 3;
   const wl = g.createRadialGradient(300, 300, 60, 420, 360, 900); wl.addColorStop(0, L.wall[0]); wl.addColorStop(.6, L.wall[1]); wl.addColorStop(1, L.wall[2]);
   g.fillStyle = wl; g.fillRect(0, 0, DW, FLOOR + 10);
@@ -125,13 +125,13 @@ function room(g, j) {
   wash(g, rect(890, 560, 54, 60), '#c87a4a', { layers: 2, alpha: .9, amp: 2, seed: 79, edge: .2, blend: 'source-over' });   // plant pot + leaves
   for (let k = 0; k < 7; k++) { const a = -Math.PI / 2 + (k - 3) * .34, cx = 917 + Math.cos(a) * 46, cy = 556 + Math.sin(a) * 52;
     g.save(); g.translate(cx, cy); g.rotate(a + Math.PI / 2); wash(g, el(0, 0, 13, 34, 10), k % 2 ? '#4f8f3a' : '#6aaa48', { layers: 2, alpha: .8, amp: 3, seed: 80 + k, edge: .2, blend: 'source-over' }); g.restore(); }
-  if (night) {                                                                                                 // the armchair + floor lamp
+  if (furn === 'armchair') {                                                                                   // the armchair + floor lamp
     wash(g, [[420, 590], [700, 590], [716, 840], [404, 840]], '#8a5a6a', { layers: 3, alpha: .8, amp: 4, seed: 91, edge: .2, blend: 'source-over' });
     wash(g, [[372, 680], [450, 650], [462, 880], [372, 880]], '#7a4a5a', { layers: 3, alpha: .85, amp: 3, seed: 92, edge: .2, blend: 'source-over' });
     wash(g, [[670, 650], [748, 680], [748, 880], [658, 880]], '#7a4a5a', { layers: 3, alpha: .85, amp: 3, seed: 93, edge: .2, blend: 'source-over' });
     g.fillStyle = '#3a2a22'; g.fillRect(806, 420, 8, 300); g.fillRect(780, 716, 60, 8);
     wash(g, [[760, 380], [860, 380], [836, 432], [784, 432]], '#f2c46a', { layers: 2, alpha: .95, amp: 2, seed: 94, edge: .2, blend: 'source-over' });
-  } else {                                                                                                     // small table with a cloth
+  } else if (furn === 'table') {                                                                               // small table with a cloth
     wash(g, [[740, 560], [950, 560], [956, 600], [734, 600]], '#fffdf6', { layers: 2, alpha: .95, amp: 3, seed: 95, edge: .25, blend: 'source-over' });
     g.fillStyle = '#6a4a34'; g.fillRect(760, 600, 12, 130); g.fillRect(918, 600, 12, 130);
   }
@@ -197,22 +197,22 @@ function komorebi(g, j, t) {
 
 /* ---------- the five moments ---------- */
 const FOOT = 905, BOT = 1060, HH = 800;          // sprites stand with their thigh cut below the frame
-const CH = [
-  { // I · good morning: she greets the sun at the window, breathing in; the cat stretches
+const HEALTH = [
+  { light: 0, // I · good morning: she greets the sun at the window, breathing in; the cat stretches
     actors(g, t) {
       const q = t % 8, wave = q > 3.2 && q < 6.4, pop = Math.max(0, 1 - Math.abs(q - 3.2) * 6) + Math.max(0, 1 - Math.abs(q - 6.4) * 6), br = Math.sin(t * 1.6) * .008;
       cat(g, 300, FOOT, .95, { pose: q > 2 && q < 6 ? 'stretch' : 'sit', t });
       puppet(g, wave ? 'wave' : 'stand', 640, BOT, HH, { rot: Math.sin(t * .8) * .012 - (wave ? .02 : 0), sx: 1 - pop * .03, sy: 1 + br + pop * .04 });
     },
   },
-  { // II · tree pose, swaying like the tree outside; the cat copies her stretch
+  { light: 1, // II · tree pose, swaying like the tree outside; the cat copies her stretch
     actors(g, t) {
       const sway = Math.sin(t * 1.1) * .03, br = Math.sin(t * 1.3) * .01;
       cat(g, 300, FOOT, .95, { pose: 'stretch', t: t * .7 });
       puppet(g, 'yoga', 640, BOT, HH, { rot: sway, sy: 1 + br });
     },
   },
-  { // III · she laughs and bounces, the cat chases the yarn
+  { light: 2, // III · she laughs and bounces, the cat chases the yarn
     actors(g, t) {
       const ph = (t * 1.4) % 1, air = Math.max(0, Math.sin(ph * TAU)), land = Math.max(0, -Math.sin(ph * TAU));
       const bx = 330 + Math.sin(t * .9) * 80; disc(g, bx, FOOT - 14, 14, '#c9a5f8'); g.strokeStyle = '#8f6ad0'; g.lineWidth = 2; g.beginPath(); g.arc(bx, FOOT - 14, 9, .5, 3.5); g.stroke();
@@ -221,7 +221,7 @@ const CH = [
       for (let k = 0; k < 4; k++) { const p = (t * .4 + k / 4) % 1; g.globalAlpha = 1 - p; g.fillStyle = k % 2 ? '#e2592d' : '#f8d867'; g.font = `${26 + p * 10}px Georgia, serif`; g.fillText(k % 2 ? '♪' : '✦', 800 + k * 30 + Math.sin(t + k) * 10, 380 - p * 160); g.globalAlpha = 1; }
     },
   },
-  { // IV · night — she has fallen asleep reading in the armchair; the cat curled up
+  { light: 3, // IV · night — she has fallen asleep reading in the armchair; the cat curled up
     actors(g, t) {
       const br = Math.sin(t * 1.2), nod = Math.sin(t * .35) * .015;
       cat(g, 260, FOOT - 6, .95, { pose: 'sleep', t });
@@ -231,7 +231,7 @@ const CH = [
       g.save(); g.globalCompositeOperation = 'screen'; const lamp = g.createRadialGradient(810, 410, 10, 810, 410, 440); lamp.addColorStop(0, 'rgba(255,200,110,.34)'); lamp.addColorStop(1, 'rgba(255,200,110,0)'); g.fillStyle = lamp; g.fillRect(0, 0, DW, DH); g.restore();
     },
   },
-  { // V · at eighty — silver hair, her tea in the golden afternoon, the old cat beside her
+  { light: 4, // V · at eighty — silver hair, her tea in the golden afternoon, the old cat beside her
     actors(g, t) {
       const x = 660, br = Math.sin(t * 1.1) * .008, tilt = Math.sin(t * .5) * .015;
       wash(g, [[x - 150, 420], [x + 150, 420], [x + 144, 760], [x - 144, 760]], '#8a5a3a', { layers: 2, alpha: .9, amp: 2, seed: 61, edge: .2, blend: 'source-over' });   // tall chair back
@@ -243,11 +243,61 @@ const CH = [
     },
   },
 ];
+
+/* ---------- every other area: the same home, her own poses, one moment per vision line ----------
+   A chapter = { light, furn, pose, motion, fx, cat }. Bust poses stand in the foreground with the thigh cut below
+   the frame; full-body poses (career at her desk, travel on her suitcase) stand on the floor, smaller. */
+const FULL = { career: [600, 960, 600], travel: [620, 960, 640] };        // x, feet y, height
+function fx(g, kind, t, x, y) {
+  const N = { sparks: 6, hearts: 5, notes: 4, coins: 6, idea: 5, leaves: 8, zzz: 3, petals: 10, glow: 1 }[kind] || 0;
+  for (let k = 0; k < N; k++) {
+    const p = (t * (kind === 'coins' ? .5 : .32) + k / N) % 1, a = Math.sin(p * Math.PI), dx = Math.sin(t * 1.3 + k * 2.1) * 26 + (hash(k, 3) - .5) * 220, dy = -p * 220;
+    g.save(); g.globalAlpha = a; g.translate(x + dx, y + dy);
+    if (kind === 'sparks' || kind === 'idea') { g.fillStyle = k % 2 ? '#f8d867' : '#fff3b0'; g.font = `${22 + 12 * a}px Georgia, serif`; g.fillText(k % 3 ? '✦' : '✧', 0, 0); }
+    else if (kind === 'hearts') { g.fillStyle = k % 2 ? '#e83729' : '#ff8fb5'; g.font = `${20 + 12 * a}px Georgia, serif`; g.fillText('♥', 0, 0); }
+    else if (kind === 'notes') { g.fillStyle = k % 2 ? '#e2592d' : '#5d9dc5'; g.font = `${26 + 10 * a}px Georgia, serif`; g.fillText(k % 2 ? '♪' : '♫', 0, 0); }
+    else if (kind === 'coins') { g.translate(0, -dy * 2 - 120); g.fillStyle = '#f2c14e'; g.beginPath(); g.ellipse(0, 0, 11 * Math.abs(Math.cos(t * 4 + k)) + 2, 11, 0, 0, TAU); g.fill(); g.strokeStyle = '#b8862a'; g.lineWidth = 2; g.stroke(); }
+    else if (kind === 'leaves' || kind === 'petals') { g.rotate(t + k); g.fillStyle = kind === 'leaves' ? (k % 2 ? '#7fb84a' : '#a6cf62') : 'rgba(255,190,200,.95)'; g.beginPath(); g.ellipse(0, 0, 8, 4, 0, 0, TAU); g.fill(); }
+    else if (kind === 'zzz') { g.fillStyle = '#fff'; g.font = `italic ${22 + p * 18}px Georgia, serif`; g.fillText('z', 0, 0); }
+    g.restore();
+  }
+  if (kind === 'idea') { const p = .5 + .5 * Math.sin(t * 2); const q = g.createRadialGradient(x, y - 160, 4, x, y - 160, 70); q.addColorStop(0, `rgba(255,240,160,${.55 + .3 * p})`); q.addColorStop(1, 'rgba(255,240,160,0)'); g.fillStyle = q; g.fillRect(x - 80, y - 240, 160, 160); g.fillStyle = '#fff6c8'; g.beginPath(); g.arc(x, y - 166, 20, 0, TAU); g.fill(); g.fillStyle = '#c9a24a'; g.fillRect(x - 9, y - 148, 18, 12); }
+  if (kind === 'glow') { const p = .5 + .5 * Math.sin(t * 1.2); g.save(); g.globalCompositeOperation = 'screen'; const q = g.createRadialGradient(x, y - 120, 10, x, y - 120, 360); q.addColorStop(0, `rgba(255,230,170,${.25 + .15 * p})`); q.addColorStop(1, 'rgba(255,230,170,0)'); g.fillStyle = q; g.fillRect(x - 380, y - 500, 760, 760); g.restore(); }
+}
+function chapterOf(c) {
+  return { light: c.light, furn: c.furn, actors(g, t) {
+    const pose = c.alt && (t % 9) > 5.5 ? c.alt : c.pose, full = FULL[pose];
+    cat(g, c.catX || 300, FOOT - (c.cat === 'sleep' ? 6 : 0), .95, { pose: c.cat || 'sit', t });
+    if (c.fxBehind) fx(g, c.fxBehind, t, full ? full[0] : 640, full ? full[1] - full[2] * .7 : 600);
+    const br = Math.sin(t * 1.4) * .009, m = c.motion || 'breathe';
+    const rot = m === 'sway' ? Math.sin(t * 1.1) * .025 : m === 'nod' ? Math.sin(t * .4) * .015 - .01 : m === 'bounce' ? Math.sin(t * 2.8) * .03 : Math.sin(t * .8) * .01;
+    const air = m === 'bounce' ? Math.max(0, Math.sin(t * 1.4 * TAU)) : 0;
+    const light = c.light === 3 ? 'rgba(255,190,110,.28)' : c.light === 4 ? 'rgba(255,200,120,.3)' : 'rgba(255,236,190,.22)';
+    if (full) puppet(g, pose, full[0], full[1] - air * 40, full[2], { rot: rot * .6, sy: 1 + br, light });
+    else puppet(g, pose, c.x || 640, BOT - air * 60, HH, { rot, sx: 1 - air * .02, sy: 1 + br + air * .03, light, from: c.light === 3 ? 'right' : 'left' });
+    if (c.fx) fx(g, c.fx, t, full ? full[0] + 40 : 700, full ? full[1] - full[2] * .75 : 520);
+    if (c.light === 3) { g.save(); g.globalCompositeOperation = 'screen'; const lamp = g.createRadialGradient(810, 410, 10, 810, 410, 440); lamp.addColorStop(0, 'rgba(255,200,110,.3)'); lamp.addColorStop(1, 'rgba(255,200,110,0)'); g.fillStyle = lamp; g.fillRect(0, 0, DW, DH); g.restore(); }
+  } };
+}
+const SPEC = {
+  mind:          [{ light: 2, pose: 'read', motion: 'nod', fx: 'idea' },                      { light: 0, pose: 'career', furn: 'none', fx: 'sparks', cat: 'stretch', catX: 250 }],
+  emotions:      [{ light: 0, pose: 'meditate', motion: 'breathe', fxBehind: 'glow', cat: 'sleep' }, { light: 4, pose: 'heart', motion: 'sway', fx: 'hearts' }],
+  character:     [{ light: 1, pose: 'stand', motion: 'breathe', fx: 'leaves' },                { light: 3, pose: 'heart', motion: 'nod', cat: 'sleep' }],
+  spirit:        [{ light: 0, pose: 'meditate', motion: 'breathe', fxBehind: 'glow', fx: 'sparks' }, { light: 4, pose: 'wave', motion: 'sway', fx: 'petals' }],
+  connection:    [{ light: 2, pose: 'wave', alt: 'laugh', motion: 'sway', fx: 'hearts', cat: 'hop' }, { light: 4, pose: 'laugh', motion: 'bounce', fx: 'notes' }],
+  money:         [{ light: 0, pose: 'money', motion: 'breathe', fx: 'coins' },                  { light: 4, pose: 'money', motion: 'sway', fx: 'sparks', fxBehind: 'glow' }],
+  career:        [{ light: 0, pose: 'career', furn: 'none', fx: 'idea' },                       { light: 2, pose: 'travel', furn: 'none', fx: 'leaves', cat: 'hop', catX: 260 }],
+  'life-quality':[{ light: 1, pose: 'travel', furn: 'none', fx: 'leaves', catX: 250 },          { light: 4, pose: 'walk', motion: 'sway', fxBehind: 'glow', cat: 'sleep' }],
+  energy:        [{ light: 0, pose: 'laugh', alt: 'wave', motion: 'bounce', fx: 'sparks', cat: 'hop' }, { light: 3, pose: 'meditate', motion: 'breathe', fx: 'zzz', cat: 'sleep' }],
+  love:          [{ light: 0, pose: 'heart', motion: 'sway', fx: 'hearts' },                    { light: 4, pose: 'laugh', alt: 'heart', motion: 'sway', fx: 'petals', fxBehind: 'glow' }],
+};
+export const ROOM_SETS = { health: HEALTH, ...Object.fromEntries(Object.entries(SPEC).map(([k, v]) => [k, v.map(chapterOf)])) };
 const TINT = [null, null, null, 'rgba(70,90,150,.35)', 'rgba(255,170,90,.12)'];
 
 /* ---------- player: one canvas; a chapter change blooms the new moment in like wet paint ---------- */
 const fit = (W, H) => { const s = Math.max(W / DW, H / DH), ox = clamp(W / 2 - 560 * s, W - DW * s, 0), oy = (H - DH * s) * .6; return [s, ox, oy]; };
-export function mountAnimeRoom(host, { budget = 460000, base = './' } = {}) {
+export function mountAnimeRoom(host, { budget = 460000, base = './', set = 'health' } = {}) {
+  const CH = ROOM_SETS[set] || HEALTH;
   loadSprites(base);
   const cv = off(10, 10); cv.className = 'vcv'; cv.setAttribute('aria-hidden', 'true'); host.prepend(cv);
   const ctx = cv.getContext('2d'), stills = {}, layer = off(10, 10), reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -255,13 +305,13 @@ export function mountAnimeRoom(host, { budget = 460000, base = './' } = {}) {
   const t0 = performance.now() - 3000;
   const size = () => { const r = host.getBoundingClientRect(); area = r.width * r.height; const s = Math.min(1.4, Math.sqrt(budget / Math.max(1, area)));
     W = Math.max(320, Math.round(r.width * s)); H = Math.max(200, Math.round(r.height * s)); cv.width = layer.width = W; cv.height = layer.height = H; for (const k in stills) delete stills[k]; last = -1; };
-  const still = j => { if (stills[j]) return stills[j]; const c = off(W, H), g = c.getContext('2d'), [s, ox, oy] = fit(W, H); g.setTransform(s, 0, 0, s, ox, oy); room(g, j); return (stills[j] = c); };
+  const still = j => { if (stills[j]) return stills[j]; const c = off(W, H), g = c.getContext('2d'), [s, ox, oy] = fit(W, H); g.setTransform(s, 0, 0, s, ox, oy); room(g, CH[j].light, CH[j].furn); return (stills[j] = c); };
   const paint = (g, j, t) => {
     const [s, ox, oy] = fit(W, H);
-    g.setTransform(s, 0, 0, s, ox, oy); view(g, j, t);
+    const L = CH[j].light; g.setTransform(s, 0, 0, s, ox, oy); view(g, L, t);
     g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(still(j), 0, 0);
-    g.setTransform(s, 0, 0, s, ox, oy); curtains(g, j, t); komorebi(g, j, t); CH[j].actors(g, t);
-    if (TINT[j]) { g.save(); g.globalCompositeOperation = 'multiply'; g.fillStyle = TINT[j]; g.fillRect(0, 0, DW, DH); g.restore(); }
+    g.setTransform(s, 0, 0, s, ox, oy); curtains(g, L, t); komorebi(g, L, t); CH[j].actors(g, t);
+    if (TINT[L]) { g.save(); g.globalCompositeOperation = 'multiply'; g.fillStyle = TINT[L]; g.fillRect(0, 0, DW, DH); g.restore(); }
     g.setTransform(1, 0, 0, 1, 0, 0);
   };
   const draw = t => {
