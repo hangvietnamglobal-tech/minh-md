@@ -867,7 +867,7 @@ function drawArea(i){
       <div class="ahg"><div>
         <p class="kick"><b>##</b> ${i+1} / ${A.length} · ${esc(a.arcana)}</p>
         <h2>${esc(a.name)}</h2><p class="ess">${esc(a.essence)}</p><p class="atag">${esc(a.tag)}</p><p class="astyle" id="aStyle"></p></div>
-        ${a.live ? `<div class="aart live"><img class="atar" alt="" src="${a.tarot}"><div class="minh-host" id="minhHost"><span class="minh-tip">tap me ✦</span></div></div>` : `<div class="aart"><img class="atar" alt="" src="${a.tarot}">${a.propImg ? `<img class="aprop" alt="" src="${a.propImg}">` : ""}</div>`}</div>
+        <div class="aart live"><img class="atar" alt="" src="${a.tarot}"><div class="minh-host" id="minhHost"><span class="minh-tip">tap me ✦</span></div></div></div>
     </header>
     <div class="abody">
       <section class="as"><div class="ash"><p class="kick"><b>##</b> the habits that get me there</p>
@@ -883,7 +883,10 @@ function drawArea(i){
         ${a.quote ? `<blockquote>${esc(a.quote)}</blockquote>` : ""}</section>
     </div>`;  stopPainting(); const hp = mountPainting($("#ain .ahd"), k); $("#aStyle").textContent = hp ? "living painting · " + hp.style : "";
   storyInit(k); purposeInit();
-  MINH && MINH.stop(); MINH = a.live ? mountMinh($("#minhHost"), {url: "./" + a.live}) : null;
+  // Minh lives on every area page; the same live player is moved into the new header on re-renders (no reload)
+  if(MINH) MINH.attach($("#minhHost"));
+  else { MINH = mountMinh($("#minhHost"), {url: "./iki/minh.iki"}); }
+  if(MINH_AREA !== k){ MINH_AREA = k; const sc = areaScore(i); setTimeout(() => MINH && MINH.react("hello", sc >= 100 ? `${a.name}: every target met this week ✦` : sc > 0 ? `${a.name}: ${sc}% of this week's targets. Let's go!` : `Hi! Let's start ${a.name.toLowerCase()} this week.`), 900); }
 }
 /* ---- Purpose — why it matters: four cards that arrive like a hand of cards.
    Words rise out of a mask, the numeral springs in, cards tilt toward the pointer with a moving shine.
@@ -901,7 +904,9 @@ function purposeSection(a){
       ${pose ? `<div class="pfig"><img src="${POSE_SRC[pose]}" alt="" loading="lazy" decoding="async"><span class="pfx fx-${fx}">${FX[fx]||""}</span></div>` : ""}
       <span class="shine"></span></article>`; }).join("")}</div></section>`;
 }
-let pio = null, MINH = null;
+let pio = null, MINH = null, MINH_AREA = null;
+const CHEER = ["nice!", "keep going!", "that's the way.", "one more brick.", "proud of you.", "small steps, big life.", "you showed up."];
+const pick = (arr, n) => arr[n % arr.length];
 function purposeInit(){
   pio && pio.disconnect();
   const sec = $("#ain .pur"); if(!sec) return;
@@ -1013,7 +1018,7 @@ vbFile.onchange = () => { const f = vbFile.files[0]; if(!f || !vbSlot) return; c
     const [b, k] = vbSlot; (DB.vb[b] = DB.vb[b] || [])[k] = cv.toDataURL("image/jpeg", .78); LS.set(DB); URL.revokeObjectURL(img.src); vbFile.value = ""; drawArea(AREA); };
   img.src = URL.createObjectURL(f); };
 function area(i, from){
-  if(i < 0){ if(AREA < 0) return; stopPainting(); GH && GH.stop(); GH = null; MINH && MINH.stop(); MINH = null; document.body.classList.remove("area-open"); AREA = -1; if(location.hash.startsWith("#/")) history.replaceState(null, "", location.pathname + location.search); lenis && lenis.start(); return; }
+  if(i < 0){ if(AREA < 0) return; stopPainting(); GH && GH.stop(); GH = null; MINH && MINH.stop(); MINH = null; MINH_AREA = null; document.body.classList.remove("area-open"); AREA = -1; if(location.hash.startsWith("#/")) history.replaceState(null, "", location.pathname + location.search); lenis && lenis.start(); return; }
   i = (i + A.length) % A.length; AREA = i; watch(false); openIndex(false); reading(false); today(false); lenis && lenis.stop();
   drawArea(i); document.body.classList.add("area-open"); $("#area").scrollTop = 0;
   if(location.hash !== "#/" + slug(A[i].name)) history.replaceState(null, "", "#/" + slug(A[i].name));
@@ -1044,7 +1049,12 @@ $("#area").addEventListener("click", e => {
   const d = t.closest(".hd button"); if(d && !d.disabled){
     const k = slug(A[AREA].name), h = +d.closest(".hb").dataset.h, tk = ticks(k, h), was = !!tk[d.dataset.d];
     if(was) delete tk[d.dataset.d]; else tk[d.dataset.d] = 1; LS.set(DB);
-    const per = A[AREA].habits[h][1], hit = weekCount(k, h, new Date()) >= per;
+    const per = A[AREA].habits[h][1], wc = weekCount(k, h, new Date()), hit = wc >= per;
+    if(MINH){ const name = A[AREA].habits[h][0], all = areaScore(AREA) >= 100;
+      if(was) MINH.react("untick", "Undone. No stress — tomorrow counts too.");
+      else if(all) MINH.react("goal", `All of this week's ${A[AREA].name} targets — done! 🎉`);
+      else if(hit && wc === per) MINH.react("goal", `“${name}”: ${per}/${per} this week. Target hit!`);
+      else MINH.react("tick", `${wc}/${per} this week · ${pick(CHEER, wc)}`); }
     const st = $("#area").scrollTop; drawArea(AREA); $("#area").scrollTop = st;
     const nb = $(`#ain .hb[data-h="${h}"] .hd button[data-d="${d.dataset.d}"]`);
     if(nb && !was && !reduce){ gsap.fromTo(nb, {scale:.6}, {scale:1, duration:.5, ease:"bouncy"});

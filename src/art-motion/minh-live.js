@@ -19,16 +19,29 @@ export function mountMinh(host, { url = "./iki/minh.iki", under = "./iki/minh-un
   // seams a rigged turn opens at layer edges show hair, not the page
   const box = document.createElement("div"); box.className = "minh-box"; box.style.backgroundImage = `url(${under})`;
   const cv = document.createElement("canvas"); cv.className = "minh-live"; cv.setAttribute("role", "img"); cv.setAttribute("aria-label", "Minh, animated");
-  box.appendChild(cv); host.appendChild(box);
-  const fitBox = () => { const r = host.getBoundingClientRect(), k = VIEW[0] / VIEW[1]; let h = r.height, w = h * k; if (w > r.width) { w = r.width; h = w / k; } box.style.width = w + "px"; box.style.height = h + "px"; };
+  const bub = document.createElement("p"); bub.className = "minh-say"; bub.setAttribute("aria-live", "polite");
+  box.appendChild(cv); box.appendChild(bub); host.appendChild(box);
+  let sayT = 0;
+  const say = (text, ms = 3200) => { bub.textContent = text; bub.classList.remove("on"); void bub.offsetWidth; bub.classList.add("on"); clearTimeout(sayT); sayT = setTimeout(() => bub.classList.remove("on"), ms); };
+  const fitBox = () => { const r = (host_ || host).getBoundingClientRect(), k = VIEW[0] / VIEW[1]; let h = r.height, w = h * k; if (w > r.width) { w = r.width; h = w / k; } box.style.width = w + "px"; box.style.height = h + "px"; };
   let player, motion, raf = 0, visible = true, alive = true, smileT = 0;
   const size = () => { const r = cv.getBoundingClientRect(), d = Math.min(2, devicePixelRatio || 1); cv.width = Math.max(2, Math.round(r.width * d)); cv.height = Math.max(2, Math.round(r.height * d)); };
   const io = new IntersectionObserver(([e]) => { visible = e.isIntersecting; });
   const ro = new ResizeObserver(() => { fitBox(); size(); });
+  let host_;
   const look = e => { if (!motion) return; const r = cv.getBoundingClientRect(), x = (e.clientX - (r.left + r.width / 2)) / (r.width * .6), y = -(e.clientY - (r.top + r.height * .32)) / (r.height * .6);
     motion.setGazeTarget(Math.max(-1, Math.min(1, x)), Math.max(-1, Math.min(1, y))); };
   const away = () => motion && motion.clearGazeTarget();
   const tap = () => { if (!motion) return; motion.playExpression("smile"); motion.playMotion("Nod", 0); smileT = performance.now() + 2600; };
+  // reactions to what you do on the page
+  const react = (kind, text) => {
+    if (text) say(text);
+    if (!motion) return;
+    if (kind === "tick") { motion.playExpression("smile"); motion.playMotion("Nod", 0); smileT = performance.now() + 2200; }
+    else if (kind === "goal") { motion.playExpression("smile"); motion.playMotion("Nod", 0); smileT = performance.now() + 2600; box.classList.remove("cheer"); void box.offsetWidth; box.classList.add("cheer"); }
+    else if (kind === "untick") { motion.playMotion("Tilt", 0); }
+    else if (kind === "hello") { motion.playMotion("Tilt", 0); }
+  };
   getModel(url).then(async json => {
     if (!alive) return;
     const model = loadIkiModel(json);
@@ -54,5 +67,8 @@ export function mountMinh(host, { url = "./iki/minh.iki", under = "./iki/minh-un
     onReady && onReady();
   }).catch(err => { console.warn("Minh live:", err); cv.remove(); });
   fitBox(); io.observe(cv); ro.observe(host);
-  return { canvas: cv, smile: tap, stop() { alive = false; cancelAnimationFrame(raf); io.disconnect(); ro.disconnect(); removeEventListener("pointermove", look); document.removeEventListener("pointerleave", away); if (player) { player.stop(); player.destroy(); } box.remove(); } };
+  host_ = host;
+  return { canvas: cv, box, say, react, smile: tap,
+    attach(h) { if (h === host_) return; h.appendChild(box); ro.disconnect(); ro.observe(h); host_ = h; fitBox(); },
+    stop() { clearTimeout(sayT); alive = false; cancelAnimationFrame(raf); io.disconnect(); ro.disconnect(); removeEventListener("pointermove", look); document.removeEventListener("pointerleave", away); if (player) { player.stop(); player.destroy(); } box.remove(); } };
 }
