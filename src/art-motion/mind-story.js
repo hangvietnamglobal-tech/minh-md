@@ -254,6 +254,8 @@ const puff = (g, x, y, w, h, col, edge, seed) => {      // a scalloped watercolo
   for (let k = 0; k < 9; k++) { const u = k / 8, px = x + (u - .5) * w, r = h * (.35 + .4 * Math.sin(u * Math.PI)) * (.8 + hash(k, seed) * .4); g.moveTo(px + r, y); g.arc(px, y, r, 0, TAU); }
   g.fill(); g.fillRect(x - w / 2, y, w, h * .25);
 };
+const crescent = (g, x, y, r, dx, dy, col) => { const c = off(Math.ceil(r * 2 + 4), Math.ceil(r * 2 + 4)), q = c.getContext('2d'); q.fillStyle = col; q.beginPath(); q.arc(r + 2, r + 2, r, 0, TAU); q.fill();
+  q.globalCompositeOperation = 'destination-out'; q.beginPath(); q.arc(r + 2 + dx, r + 2 + dy, r * .92, 0, TAU); q.fill(); g.drawImage(c, x - r - 2, y - r - 2); };
 const star4 = (g, x, y, r, a) => { g.fillStyle = `rgba(255,240,200,${a})`; g.beginPath(); g.moveTo(x, y - r); g.quadraticCurveTo(x, y, x + r * .35, y); g.quadraticCurveTo(x, y, x, y + r); g.quadraticCurveTo(x, y, x - r * .35, y); g.quadraticCurveTo(x, y, x, y - r); g.fill(); };
 const HANG = { // a little glass library hanging from the crescent moon
   still(g, W, H) { wash(g, W, H, '#1c2a5e', ['rgba(40,60,120,.35)', 'rgba(10,20,60,.35)', 'rgba(60,80,140,.25)'], 201);
@@ -305,7 +307,7 @@ const CABIN = { // a cabin on the cliff, reading until the valley lights come on
     grain(g, W, H, 22, .07); },
   live(g, W, H, t, S) { const M = Math.min(W, H);
     twinkle(g, t, W, H, 30, 251, [0, 0, 1, .35]);
-    g.fillStyle = '#fff4d8'; g.beginPath(); g.arc(W * .86, H * .06, M * .045, 0, TAU); g.arc(W * .88, H * .04, M * .043, 0, TAU, true); g.fill('evenodd');
+    crescent(g, W * .86, H * .07, M * .045, M * .025, -M * .02, '#fff4d8');
     for (let i = 0; i < 40; i++) { const a = .4 + .6 * Math.pow(.5 + .5 * Math.sin(t * 2 + i * 3), 2); g.fillStyle = `rgba(255,210,120,${a})`; g.fillRect(W * (.55 + hash(i, 261) * .4), H * (.73 + hash(i, 262) * .08), 1.8, 1.8); }
     // cabin on stilts
     const bx = W * .05, by = H * .44, bw = W * .4, fl = .9 + .1 * Math.sin(t * 6);
@@ -381,3 +383,9 @@ export function mountMindStory(host, { base = './', budget = 420000 } = {}) {
   };
 }
 export const MIND_CHAPTERS = SCENES.length;
+// for exporting the story as a film: paint chapter j at time t into any 2D context
+export function paintMindFrame(g, W, H, j, t, cache) {
+  const C = cache[j] || (cache[j] = {}); if (!C.still) { C.still = off(W, H); SCENES[j].still(C.still.getContext('2d'), W, H, C); }
+  g.drawImage(C.still, 0, 0); SCENES[j].live(g, W, H, t, C);
+}
+export const mindSpritesReady = () => Promise.all(Object.entries(SRC).map(([k, s]) => IMG[k] && IMG[k].complete ? 1 : new Promise(r => { const im = new Image(); im.onload = r; im.onerror = r; im.src = './' + s; IMG[k] = im; })));
