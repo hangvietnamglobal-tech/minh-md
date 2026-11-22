@@ -24,6 +24,13 @@ const FX = {
       g.save(); g.translate(x, y); g.scale(1, .18); glow(g, 0, 0, rx, '235,245,240', .18); g.restore(); }
     for (let i = 0; i < 30; i++) { const a = Math.pow(.5 + .5 * Math.sin(t * 2 + i * 3), 4); glow(g, W * hash(i, 34), H * hash(i, 35), Math.min(W, H) * .01, '255,255,240', a * .7); }
     g.restore(); },
+  aura(g, W, H, t) { const M = Math.min(W, H); g.save(); g.globalCompositeOperation = 'screen';
+    ['255,80,220', '120,90,255', '80,200,255', '255,170,60'].forEach((c, i) => { const r = M * (.25 + i * .12) * (1 + .05 * Math.sin(t * 1.2 - i)); g.save(); g.translate(W / 2, H * .52); g.scale(.7, 1); glow(g, 0, 0, r, c, .12 + .06 * Math.sin(t * 1.2 - i)); g.restore(); });
+    for (let i = 0; i < 40; i++) { const a = i / 40 * TAU + t * .2, r = M * (.3 + .05 * Math.sin(t + i)); glow(g, W / 2 + Math.cos(a) * r * .7, H * .52 + Math.sin(a) * r, M * .01, '255,255,220', .5 + .5 * Math.sin(t * 3 + i)); }
+    g.restore(); },
+  stars(g, W, H, t) { const M = Math.min(W, H); g.save(); g.globalCompositeOperation = 'screen';
+    for (let i = 0; i < 60; i++) { const a = Math.pow(.5 + .5 * Math.sin(t * (1 + hash(i, 61) * 2) + i * 2), 3); glow(g, W * hash(i, 62), H * hash(i, 63), M * (.004 + hash(i, 64) * .008), '230,230,255', a * .9); }
+    glow(g, W * .66, H * .3, M * (.14 + .03 * Math.sin(t * 1.5)), '255,255,255', .25); g.restore(); },
   sun(g, W, H, t) { const M = Math.min(W, H); g.save(); g.globalCompositeOperation = 'screen';
     glow(g, W * .62, H * .3, M * (.45 + .04 * Math.sin(t * .6)), '255,205,150', .25);
     for (let i = 0; i < 6; i++) { const a = .04 + .035 * Math.sin(t * .5 + i); g.fillStyle = `rgba(255,220,170,${a})`; g.beginPath(); g.moveTo(W * (.6 + i * .02), H * .25); g.lineTo(W * (.63 + i * .02), H * .25); g.lineTo(W * (.25 + i * .12), H); g.lineTo(W * (.15 + i * .12), H); g.fill(); }
@@ -74,4 +81,13 @@ export const HEALTH_PHOTOS = [
   { fx: 'gym', imgs: [['health/pullup.webp', .5, .2], ['health/back.webp', .5, .4]] },
   { fx: 'mist', imgs: [['health/balance.webp', .5, .5]] },
   { fx: 'sun', imgs: [['health/sunrise-80.webp', .5, .32]] },
+];
+
+// the Emotions story, from Tuệ Minh's emotion mood board
+export const EMOTION_PHOTOS = [
+  { fx: 'ember', imgs: [['emotions/what-we-are.webp', .6, .45]] },
+  { fx: 'garden', imgs: [['emotions/calm-tea.webp', .5, .55]] },
+  { fx: 'sun', imgs: [['emotions/pause-spiral.webp', .5, .75]] },
+  { fx: 'aura', imgs: [['emotions/aura.webp', .5, .5]] },
+  { fx: 'stars', imgs: [['emotions/trust-vision.webp', .6, .4]] },
 ];
