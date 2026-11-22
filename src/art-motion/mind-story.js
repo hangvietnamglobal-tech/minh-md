@@ -5,7 +5,8 @@ import { TAU, clamp, lerp, ss, hash, noise, fbm, grain, strokes } from './core.j
 
 const off = (w, h) => { const c = document.createElement('canvas'); c.width = Math.max(1, w); c.height = Math.max(1, h); return c; };
 const IMG = {};
-const SRC = { read: 'poses/read.webp', meditate: 'poses/meditate.webp', wave: 'poses/wave.webp' };
+const SRC = { read: 'poses/read.webp', meditate: 'poses/meditate.webp', wave: 'poses/wave.webp', yoga: 'poses/yoga.webp', old: 'poses/her-old.webp' };
+export const loadPoses = (base = './') => { for (const [k, s] of Object.entries(SRC)) if (!IMG[k]) { const im = new Image(); im.decoding = 'async'; im.src = base + s; IMG[k] = im; } };
 
 // her sprite (cut at the thigh), lit for the scene: a light pool where the light comes from, the rest sinks into the night
 function lit(key, h, { lx = .5, ly = .5, shade = 'rgba(12,16,44,.5)', warm = null, sil = null, rim = null } = {}) {
@@ -389,3 +390,5 @@ export function paintMindFrame(g, W, H, j, t, cache) {
   g.drawImage(C.still, 0, 0); SCENES[j].live(g, W, H, t, C);
 }
 export const mindSpritesReady = () => Promise.all(Object.entries(SRC).map(([k, s]) => IMG[k] && IMG[k].complete ? 1 : new Promise(r => { const im = new Image(); im.onload = r; im.onerror = r; im.src = './' + s; IMG[k] = im; })));
+
+export { off, lit, legs, glow, vgrad, twinkle, crescent, star4 };
