@@ -11,6 +11,7 @@ import { mountAnimeRoom, ROOM_SETS } from "./art-motion/anime-room.js";
 import { mountMinh } from "./art-motion/minh-live.js";
 import { mountAges, thumbs, ERAS } from "./art-motion/ages.js";
 import { mountStair, setScale } from "./art-motion/staircase.js";
+import { mountMindStory } from "./art-motion/mind-story.js";
 gsap.registerPlugin(ScrollTrigger, CustomEase);
 
 /* =========================================================
@@ -968,7 +969,7 @@ function storyInit(k){
   vio && vio.disconnect(); VJ = -1;
   const root = $("#ain .vst"); if(!root) return;
   GH && GH.stop(); GH = null;
-  const hp = ROOM_SETS[k] ? (GH = mountAnimeRoom(root.querySelector(".vcam"), {set: k})) : mountPainting(root.querySelector(".vcam"), k, {budget:300000, cls:"vcv"});
+  const hp = k === "mind" ? (GH = mountMindStory(root.querySelector(".vcam"))) : ROOM_SETS[k] ? (GH = mountAnimeRoom(root.querySelector(".vcam"), {set: k})) : mountPainting(root.querySelector(".vcam"), k, {budget:300000, cls:"vcv"});
   root.classList.toggle("anime", !!GH);
   root.querySelector(".vcap").textContent = hp ? hp.style : "";
   storyChapter(0, true); if(reduce) return;
