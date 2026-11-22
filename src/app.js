@@ -63,7 +63,7 @@ const A = EN.areas;
 const IX = n => A.findIndex(a => a.name === n);
 $("#tarots").innerHTML = A.map((a,i) => `<div class="tarot" id="tc${i}"><img alt="${esc(a.arcana)}" src="${a.tarot}"></div>`).join("");
 $("#props").innerHTML = A.map((a,i) => `<div class="pshadow" id="ps${i}"></div><div class="prop p-${a.prop}" id="prop${i}">${a.propImg ? `<img class="pi" alt="" src="${a.propImg}">` : svgOf(a.prop, 'class="pi"')}</div>`).join("");
-const roman = ["I","II","III","IV","V","VI","VII","VIII"];
+const roman = ["I","II","III","IV","V","VI","VII","VIII","IX","X","XI","XII"];
 const words = txt => txt.split(/(\*[^*]+\*)/).filter(Boolean).map(seg => {
   const em = seg.startsWith("*"); const w = seg.replace(/\*/g,"").trim().split(/\s+/).map(x => `<span class="wd"><span>${esc(x)}</span></span>`).join(" ");
   return em ? `<em>${w}</em>` : w; }).join(" ");

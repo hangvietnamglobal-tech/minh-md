@@ -1,7 +1,7 @@
 // mind-story.js — the Mind vision as six living paintings: Minh's reading life, from the lamp to the open field.
 // Each chapter is its own painted night (or day), composed after Tuệ Minh's mood board and painted in code with the
 // huashu-art-motion toolkit: cached still + live layer at 12 fps, seeded marks, one look per painting, her own sprites.
-import { TAU, clamp, lerp, ss, hash, noise, fbm, grain } from './core.js';
+import { TAU, clamp, lerp, ss, hash, noise, fbm, grain, strokes } from './core.js';
 
 const off = (w, h) => { const c = document.createElement('canvas'); c.width = Math.max(1, w); c.height = Math.max(1, h); return c; };
 const IMG = {};
@@ -244,6 +244,111 @@ const SCENES = [
   },
 ];
 
+/* ---- three more paintings, added to the story ---- */
+const wash = (g, W, H, base, spots, seed) => {          // watercolor sky: mottled blooms over a base
+  g.fillStyle = base; g.fillRect(0, 0, W, H);
+  for (let i = 0; i < 160; i++) { const x = hash(i, seed) * W, y = hash(i, seed + 1) * H, r = Math.min(W, H) * (.05 + hash(i, seed + 2) * .14), c = spots[i % spots.length];
+    const q = g.createRadialGradient(x, y, 0, x, y, r); q.addColorStop(0, c); q.addColorStop(.7, c.replace(/[\d.]+\)$/, '0.02)')); q.addColorStop(1, c.replace(/[\d.]+\)$/, '0)')); g.fillStyle = q; g.fillRect(x - r, y - r, r * 2, r * 2); } };
+const puff = (g, x, y, w, h, col, edge, seed) => {      // a scalloped watercolor cloud
+  g.fillStyle = col; g.beginPath();
+  for (let k = 0; k < 9; k++) { const u = k / 8, px = x + (u - .5) * w, r = h * (.35 + .4 * Math.sin(u * Math.PI)) * (.8 + hash(k, seed) * .4); g.moveTo(px + r, y); g.arc(px, y, r, 0, TAU); }
+  g.fill(); g.fillRect(x - w / 2, y, w, h * .25);
+};
+const star4 = (g, x, y, r, a) => { g.fillStyle = `rgba(255,240,200,${a})`; g.beginPath(); g.moveTo(x, y - r); g.quadraticCurveTo(x, y, x + r * .35, y); g.quadraticCurveTo(x, y, x, y + r); g.quadraticCurveTo(x, y, x - r * .35, y); g.quadraticCurveTo(x, y, x, y - r); g.fill(); };
+const HANG = { // a little glass library hanging from the crescent moon
+  still(g, W, H) { wash(g, W, H, '#1c2a5e', ['rgba(40,60,120,.35)', 'rgba(10,20,60,.35)', 'rgba(60,80,140,.25)'], 201);
+    const M = Math.min(W, H); g.fillStyle = '#f2d9a8'; g.beginPath(); g.arc(W * .38, H * .05, M * .3, 0, TAU); g.arc(W * .46, -H * .06, M * .3, 0, TAU, true); g.fill('evenodd');
+    const q = g.createRadialGradient(W * .3, H * .1, 0, W * .3, H * .1, M * .3); q.addColorStop(0, 'rgba(255,240,210,.3)'); q.addColorStop(1, 'rgba(200,150,90,.2)'); g.fillStyle = q; g.fill('evenodd');
+    // paper edge
+    g.strokeStyle = '#efe6d4'; g.lineWidth = M * .03; g.strokeRect(0, 0, W, H); grain(g, W, H, 21, .07); },
+  live(g, W, H, t, S) {
+    const M = Math.min(W, H);
+    for (let i = 0; i < 16; i++) star4(g, hash(i, 211) * W, hash(i, 212) * H * .9, M * (.008 + hash(i, 213) * .012), .5 + .5 * Math.sin(t * 2 + i));
+    const cl = (y, x, w, sp, ph) => puff(g, ((x + t * sp + ph) % 1.6 - .3) * W, y * H, w * W, M * .08, 'rgba(240,222,190,.9)', 'rgba(150,140,180,.5)', ph * 10 | 0);
+    cl(.42, .0, .34, .006, 0); cl(.6, .7, .3, .005, .3);
+    const px = W * .5, py = H * .16, ang = Math.sin(t * .6) * .035;
+    g.save(); g.translate(px, py); g.rotate(ang);
+    g.strokeStyle = '#b8894a'; g.lineWidth = M * .006; g.beginPath(); g.moveTo(0, 0); g.lineTo(0, H * .3); g.stroke();
+    ['#4a6a8a', '#a84a3e', '#4a6a8a', '#a84a3e', '#6a7a8a'].forEach((c, k) => { const bw = M * .075, bh = M * .03, y = H * (.04 + k * .05), rot = Math.sin(t * 1.3 + k) * .08;
+      g.save(); g.translate(0, y); g.rotate(rot); book(g, -bw / 2, -bh / 2, bw, bh, c, '#efe3c8', k + 220, true); g.restore(); });
+    const hy = H * .36, hw = M * .4, hh = H * .26;   // the glass room
+    g.fillStyle = '#3a4e6a'; g.beginPath(); g.moveTo(-hw * .55, hy); g.lineTo(0, hy - hh * .25); g.lineTo(hw * .55, hy); g.fill();
+    const fl = .9 + .1 * Math.sin(t * 7);
+    g.fillStyle = `rgba(255,${200 + 20 * fl | 0},140,.95)`; g.fillRect(-hw / 2, hy, hw, hh);
+    for (let r = 0; r < 4; r++) for (let k = 0; k < 14; k++) { g.fillStyle = ['#8a4a3a', '#5a6a3a', '#3a5a7a', '#9a7a4a'][(k + r) % 4]; g.fillRect(-hw * .42 + k * hw * .06, hy + hh * (.18 + r * .19), hw * .04, hh * .14); }
+    g.strokeStyle = '#6a5030'; g.lineWidth = M * .006; g.strokeRect(-hw / 2, hy, hw, hh); [-1 / 6, 1 / 6].forEach(u => { g.beginPath(); g.moveTo(u * hw, hy); g.lineTo(u * hw, hy + hh); g.stroke(); });
+    g.fillStyle = '#6a5030'; g.fillRect(-hw * .58, hy + hh, hw * 1.16, M * .02);
+    g.save(); g.globalCompositeOperation = 'screen'; glow(g, hw * .62, hy + hh * .35, M * .08 * fl, '255,200,120', .8); glow(g, 0, hy + hh * .3, M * .25, '255,190,110', .3); g.restore();
+    g.fillStyle = '#ffd890'; g.fillRect(hw * .6, hy + hh * .28, M * .02, M * .03);
+    // trailing plant
+    g.strokeStyle = '#5a7a3a'; g.lineWidth = 1.5; for (let k = 0; k < 4; k++) { g.beginPath(); g.moveTo(-hw * .42 + k * 6, hy + hh); for (let j = 0; j < 8; j++) { const yy = hy + hh + j * M * .02; g.lineTo(-hw * .42 + k * 6 + Math.sin(t * 1.5 + j + k) * 4, yy); } g.stroke(); }
+    const h = hh * .62, her = S.her || (S.her = lit('read', h, { lx: .5, ly: .3, shade: 'rgba(60,30,20,.25)', warm: 'rgba(255,190,120,.3)' }));
+    legs(g, hw * .1, hy + hh, h, 'dangle', t, .8);
+    if (her) g.drawImage(her, hw * .1 - her.width / 2, hy + hh - h + M * .004);
+    g.restore();
+  },
+};
+const CABIN = { // a cabin on the cliff, reading until the valley lights come on
+  still(g, W, H, S) { const M = Math.min(W, H);
+    vgrad(g, W, H, [[0, '#3f5aa8'], [.35, '#7a8fcf'], [.52, '#e9b9a0'], [.6, '#f3d2ae'], [1, '#6a7fb8']]);
+    for (let i = 0; i < 18; i++) { const y = H * (.12 + hash(i, 231) * .4), x = hash(i, 232) * W; g.fillStyle = `rgba(${y / H > .4 ? '250,220,200' : '220,225,250'},.25)`; g.beginPath(); g.ellipse(x, y, W * (.05 + hash(i, 233) * .1), H * .012, 0, 0, TAU); g.fill(); }
+    [[.56, '#7d8fc8', .05], [.62, '#5f74b4', .06], [.7, '#4b5f9e', .07], [.8, '#3c4f8a', .06]].forEach(([y, c, a], k) => { g.fillStyle = c; g.beginPath(); g.moveTo(0, H);
+      for (let x = 0; x <= W; x += 4) g.lineTo(x, H * (y - a * fbm(x / W * 4 + k * 3, k) * 1.5)); g.lineTo(W, H); g.fill();
+      g.fillStyle = 'rgba(230,220,240,.15)'; g.fillRect(0, H * (y + .01), W, H * .02); });
+    // cliff and grass
+    g.fillStyle = '#5f7a4a'; g.beginPath(); g.moveTo(0, H * .5); g.quadraticCurveTo(W * .22, H * .52, W * .52, H); g.lineTo(0, H); g.fill();
+    g.fillStyle = '#8a8478'; g.beginPath(); g.moveTo(W * .3, H * .72); g.quadraticCurveTo(W * .42, H * .8, W * .52, H); g.lineTo(W * .36, H); g.fill();
+    for (let i = 0; i < 900; i++) { const u = hash(i, 241), v = hash(i, 242), x = u * W * .5, y = H * (.55 + v * .45); if (y < H * .52 + (x / W) * H * .35 + x * x / W / W * H * .6) continue;
+      g.strokeStyle = `rgba(${90 + hash(i, 243) * 60},${130 + hash(i, 244) * 50},70,.6)`; g.lineWidth = 1.2; g.beginPath(); g.moveTo(x, y); g.lineTo(x + 2, y - 6); g.stroke(); }
+    const pine = (x, y, h) => { g.fillStyle = '#24402e'; for (let k = 0; k < 5; k++) { const w = h * (.32 - k * .05), yy = y - k * h * .18; g.beginPath(); g.moveTo(x - w, yy); g.lineTo(x, yy - h * .3); g.lineTo(x + w, yy); g.fill(); } };
+    [[.04, .5, .2], [.12, .48, .16], [.6, .86, .2], [.68, .9, .16], [.9, .95, .2], [.5, .75, .14]].forEach(([x, y, h]) => pine(x * W, y * H, h * H));
+    grain(g, W, H, 22, .07); },
+  live(g, W, H, t, S) { const M = Math.min(W, H);
+    twinkle(g, t, W, H, 30, 251, [0, 0, 1, .35]);
+    g.fillStyle = '#fff4d8'; g.beginPath(); g.arc(W * .86, H * .06, M * .045, 0, TAU); g.arc(W * .88, H * .04, M * .043, 0, TAU, true); g.fill('evenodd');
+    for (let i = 0; i < 40; i++) { const a = .4 + .6 * Math.pow(.5 + .5 * Math.sin(t * 2 + i * 3), 2); g.fillStyle = `rgba(255,210,120,${a})`; g.fillRect(W * (.55 + hash(i, 261) * .4), H * (.73 + hash(i, 262) * .08), 1.8, 1.8); }
+    // cabin on stilts
+    const bx = W * .05, by = H * .44, bw = W * .4, fl = .9 + .1 * Math.sin(t * 6);
+    g.strokeStyle = '#3a3a44'; g.lineWidth = M * .01; [[.35, .2], [.8, .3]].forEach(([u, l]) => { g.beginPath(); g.moveTo(bx + bw * u, by); g.lineTo(bx + bw * u, by + H * l); g.stroke(); });
+    g.fillStyle = '#ffe2a8'; g.globalAlpha = fl; g.beginPath(); g.moveTo(bx, by); g.lineTo(bx, by - H * .2); g.lineTo(bx + bw * .5, by - H * .32); g.lineTo(bx + bw * .5, by); g.fill(); g.globalAlpha = 1;
+    g.save(); g.globalCompositeOperation = 'screen'; glow(g, bx + bw * .28, by - H * .12, M * .25, '255,200,120', .35 * fl); g.restore();
+    g.strokeStyle = '#3c3c46'; g.lineWidth = M * .008; g.beginPath(); g.moveTo(bx - W * .02, by - H * .19); g.lineTo(bx + bw * .52, by - H * .34); g.stroke(); g.beginPath(); g.moveTo(bx + bw * .5, by); g.lineTo(bx + bw * .5, by - H * .32); g.moveTo(bx + bw * .25, by); g.lineTo(bx + bw * .25, by - H * .25); g.stroke();
+    g.fillStyle = '#4a4650'; g.fillRect(bx, by, bw, H * .015);
+    const h = H * .15, her = S.her || (S.her = lit('read', h, { lx: .2, ly: .3, shade: 'rgba(40,50,110,.4)', warm: 'rgba(255,190,140,.25)' }));
+    if (her) g.drawImage(her, bx + bw * .7 - her.width / 2, by - h * .78);
+    g.save(); g.globalCompositeOperation = 'screen'; glow(g, bx + bw * .58, by - H * .02, M * .05 * fl, '255,200,110', .9); g.restore();
+    g.strokeStyle = '#3c3c46'; g.lineWidth = M * .004; g.beginPath(); g.moveTo(bx + bw * .5, by - H * .05); g.lineTo(bx + bw * 1.02, by - H * .05); for (let k = 0; k <= 10; k++) { g.moveTo(bx + bw * (.5 + k * .052), by - H * .05); g.lineTo(bx + bw * (.5 + k * .052), by); } g.stroke();
+    g.fillStyle = '#4a7a3a'; g.beginPath(); g.ellipse(bx + bw * .55, by - H * .085 + Math.sin(t * 1.4) * 2, M * .025, M * .03, 0, 0, TAU); g.fill();
+    for (let i = 0; i < 40; i++) { const x = W * (.02 + hash(i, 271) * .42), y = H * (.8 + hash(i, 272) * .2), sw = Math.sin(t * 1.5 + i) * 3; g.fillStyle = hash(i, 273) > .5 ? '#a88ad8' : '#fbf4e8'; g.beginPath(); g.arc(x + sw, y, M * (.006 + hash(i, 274) * .006), 0, TAU); g.fill(); }
+    for (let i = 0; i < 14; i++) { const p = (t * .05 + hash(i, 281)) % 1; glow(g, W * (.1 + hash(i, 282) * .8) + Math.sin(t + i) * 10, H * (.9 - p * .4), M * .012, '240,255,170', Math.sin(p * Math.PI) * .8); }
+  },
+};
+const HUG = { // impasto close-up: holding the books she has loved
+  still(g, W, H, S) { const M = Math.min(W, H), src = off(W, H), q = src.getContext('2d');
+    vgrad(q, W, H, [[0, '#e8dcc0'], [1, '#c9b48e']]); q.fillStyle = '#7f9bb0'; q.fillRect(W * .78, 0, W * .22, H); q.fillStyle = '#5f7a90'; q.fillRect(W * .8, H * .1, W * .03, H * .9);
+    q.fillStyle = '#9a8a6a'; q.fillRect(W * .08, H * .06, W * .14, H * .18); q.fillStyle = '#c49a8a'; q.fillRect(W * .1, H * .08, W * .1, H * .14); q.fillStyle = '#8a9a6a'; q.fillRect(W * .25, H * .03, W * .1, H * .12);
+    q.fillStyle = '#5a3a2a'; q.fillRect(0, H * .62, W * .22, H * .05); q.fillStyle = 'rgba(200,220,220,.6)'; q.fillRect(W * .05, H * .45, W * .06, H * .17);
+    for (let i = 0; i < 60; i++) { q.fillStyle = '#fbf6ea'; q.beginPath(); q.arc(W * (.03 + hash(i, 291) * .12), H * (.32 + hash(i, 292) * .15), M * .008, 0, TAU); q.fill(); }
+    q.fillStyle = '#7a2a24'; q.fillRect(0, H * .9, W, H * .1);
+    S.paint = [0, 1, 2].map(f => { const c = off(W, H), cg = c.getContext('2d'); cg.drawImage(src, 0, 0);
+      strokes(cg, src, W, H, { cell: Math.max(6, M / 70), len: M / 30, width: M / 140, seed: 3 + f, angle: (x, y) => -.3 + fbm(x / W * 3, y / H * 3) * 1.4, outline: .15, outlineMix: .3, jitterCol: 22 }); grain(cg, W, H, 23 + f, .06); return c; }); },
+  live(g, W, H, t, S) { const M = Math.min(W, H);
+    g.drawImage(S.paint[Math.floor(t * 4) % 3], 0, 0);
+    const h = H * 1.15, br = Math.sin(t * 1.2) * H * .006, her = S.her || (S.her = lit('read', h, { lx: .5, ly: .3, shade: 'rgba(80,50,30,.25)', warm: 'rgba(255,220,170,.2)' }));
+    if (her) g.drawImage(her, W * .5 - her.width / 2, H * .02 + br);
+    // the stack she holds, spines toward us with gold tooling
+    const cols = ['#7a2420', '#2f4a3a', '#c8b07a', '#2e3e66', '#8a3a24', '#3a5040', '#d0bc8a', '#5a2a22'];
+    const bw = Math.min(W * .42, h * .3), x0 = W * .5 - bw * .5, n = cols.length, bh = H * .065; let y = H * .52 + br;
+    for (let k = 0; k < n; k++) { const off2 = (hash(k, 301) - .5) * bw * .12, w2 = bw * (.92 + hash(k, 302) * .12);
+      book(g, x0 + off2, y, w2, bh * .95, cols[k], '#efe2c2', k + 310, true);
+      g.fillStyle = 'rgba(230,190,110,.75)'; for (let d = 0; d < 3; d++) star4(g, x0 + off2 + w2 * (.25 + d * .18), y + bh * .48, bh * .22, .8);
+      y += bh; }
+    for (let i = 0; i < 18; i++) { const p = (t * .04 + hash(i, 321)) % 1; g.fillStyle = `rgba(255,240,200,${Math.sin(p * Math.PI) * .6})`; g.fillRect(W * hash(i, 322), H * (1 - p), 2, 2); }
+  },
+};
+
+SCENES.splice(5, 0, HANG, CABIN); SCENES.push(HUG);
+
 export function mountMindStory(host, { base = './', budget = 420000 } = {}) {
   for (const [k, s] of Object.entries(SRC)) if (!IMG[k]) { const im = new Image(); im.decoding = 'async'; im.src = base + s; IMG[k] = im; }
   const cv = off(10, 10); cv.className = 'vcv'; cv.setAttribute('aria-hidden', 'true'); host.prepend(cv);
@@ -270,7 +375,7 @@ export function mountMindStory(host, { base = './', budget = 420000 } = {}) {
   Object.values(IMG).forEach(im => im.addEventListener('load', () => cache.forEach(C => { if (C) { C.her = null; C.sil = null; } }), { once: true }));
   if (reduce) setTimeout(() => draw(6), 400); else raf = requestAnimationFrame(frame);
   return {
-    canvas: cv, style: "Minh's reading life · six living paintings",
+    canvas: cv, style: "Minh's reading life · nine living paintings",
     chapter(j) { j = clamp(j, 0, SCENES.length - 1); if (j === cur) return; prev = reduce ? -1 : cur; cur = j; tChange = Math.floor((performance.now() - t0) / 1000 * 12) / 12; if (reduce) draw(6); },
     stop() { cancelAnimationFrame(raf); ro.disconnect(); io.disconnect(); cv.remove(); },
   };
