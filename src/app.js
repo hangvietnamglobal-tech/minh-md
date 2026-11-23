@@ -11,7 +11,7 @@ import { mountAnimeRoom, ROOM_SETS } from "./art-motion/anime-room.js";
 import { mountMinh } from "./art-motion/minh-live.js";
 import { mountStair, setScale } from "./art-motion/staircase.js";
 import { mountPeople } from "./people.js";
-import { mountBooks } from "./books.js";
+import { mountBooks, coverColor } from "./books.js";
 import { mountMindStory } from "./art-motion/mind-story.js";
 import { mountPhotoStory, HEALTH_PHOTOS, EMOTION_PHOTOS } from "./art-motion/photo-story.js";
 gsap.registerPlugin(ScrollTrigger, CustomEase);
@@ -1206,7 +1206,7 @@ function library(on, kind){
 function librarySection(){
   const B = (DB.books || []), yr = String(new Date().getFullYear());
   const shelf = k => B.filter(b => (b.kind || "book") === k).sort((a, b) => (b.finished || b.added || "").localeCompare(a.finished || a.added || "")).slice(0, 8);
-  const cov = b => b.cover ? `<img src="${esc(b.cover)}" alt="">` : `<span class="bk-fake" style="--h:${[...b.title].reduce((h,c)=>(h*31+c.charCodeAt(0))%360,11)}"><b>${esc(b.title)}</b></span>`;
+  const cov = b => b.cover ? `<img src="${esc(b.cover)}" alt="">` : `<span class="bk-fake" style="--c:${coverColor(b.title)}"><b>${esc(b.title)}</b></span>`;
   const row = (k, label) => { const L = shelf(k); return `<div class="lib-row"><p class="lib-l">${label} <i>${B.filter(b => (b.kind||"book") === k).length}</i></p>
     <div class="lib-sh">${L.map(b => `<button class="lib-b ${k}" data-lib="${k}">${cov(b)}</button>`).join("") || `<span class="lib-none">nothing yet — add the first one</span>`}<button class="lib-add" data-lib="${k}">+ open</button></div></div>`; };
   return `<section class="as lib"><p class="kick"><b>##</b> my library — books &amp; courses</p>

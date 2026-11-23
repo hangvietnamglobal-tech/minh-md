@@ -28,7 +28,9 @@ const clean = b => ({ id: b.id || uid(), kind: b.kind === "course" ? "course" : 
   about: b.about || "", ideas: lines(b.ideas), quotes: lines(b.quotes), takeaway: b.takeaway || "", tags: (Array.isArray(b.tags) ? b.tags : String(b.tags || "").split(",")).map(s => s.trim()).filter(Boolean), added: b.added || today() });
 const hue = s => [...(s || "x")].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 360, 11);
 // a typeset cover for books without a picture
-const fakeCover = b => `<div class="bk-fake" style="--h:${hue(b.title)}"><b>${esc(b.title)}</b><i>${esc(b.author)}</i></div>`;
+const PAL = ["#fc4109", "#004edf", "#1c3d24", "#c99a2e", "#5d9dc5", "#e83729", "#201e1f", "#69b488", "#8a5cc2"];
+export const coverColor = t => PAL[hue(t) % PAL.length];
+const fakeCover = b => `<div class="bk-fake" style="--c:${coverColor(b.title)}"><b>${esc(b.title)}</b><i>${esc(b.author)}</i></div>`;
 const coverOf = b => b.cover ? `<img src="${esc(b.cover)}" alt="Cover of ${esc(b.title)}" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'bk-fake',innerHTML:'<b>'+this.alt.replace('Cover of ','')+'</b>'}))">` : fakeCover(b);
 const stars = (n, cls = "bk-stars") => `<span class="${cls}">${"★".repeat(n)}<s>${"★".repeat(5 - n)}</s></span>`;
 
