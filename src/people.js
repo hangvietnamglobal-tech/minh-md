@@ -39,6 +39,16 @@ const clean = p => { const o = { id: p.id || uid(), added: p.added || today() };
   o.log = Array.isArray(p.log) ? p.log : []; return o; };
 const download = (name, text, type) => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); };
 
+// ---------- private sync: the list is published only encrypted (public/people.enc.json, AES-256-GCM);
+// the key comes from Tuệ Minh's private link #/people?k=… once per device and then stays in this browser ----------
+const ub = s => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0));
+async function pullPrivate(base = "./") {
+  const m = location.hash.match(/[?&]k=([\w-]+)/); if (m) { try { localStorage.setItem("minhmd.pk", m[1]); } catch {} history.replaceState(null, "", location.pathname + "#/people"); }
+  let k = null; try { k = localStorage.getItem("minhmd.pk"); } catch {} if (!k) return null;
+  const r = await fetch(base + "people.enc.json", { cache: "no-store" }); if (!r.ok) return null; const e = await r.json();
+  const key = await crypto.subtle.importKey("raw", ub(k), "AES-GCM", false, ["decrypt"]);
+  return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv: ub(e.iv) }, key, ub(e.ct))));
+}
 // ---------- the page ----------
 export function mountPeople({ DB, save }) {
   DB.people = (DB.people || []).map(clean);
@@ -130,5 +140,11 @@ export function mountPeople({ DB, save }) {
       if (same) { Object.keys(p).forEach(k => { if (k !== "id" && k !== "log" && (p[k] && (!Array.isArray(p[k]) || p[k].length))) same[k] = p[k]; }); upd++; } else { DB.people.push(p); add++; } });
     e.target.value = ""; commit(); alert(`Imported: ${add} new, ${upd} updated.`); };
   render();
+  // bring in the private list (new people are added; fields she has edited here are kept)
+  pullPrivate().then(L => { if (!L) return; let add = 0;
+    L.map(clean).forEach(p => { const same = DB.people.find(x => x.name.toLowerCase() === p.name.toLowerCase());
+      if (!same) { DB.people.push(p); add++; } else Object.keys(p).forEach(k => { if (k !== "id" && k !== "log" && k !== "added" && !same[k] && p[k]) same[k] = p[k]; }); });
+    commit(); if (add) $(".pp-note").textContent = `Synced ${add} new from your private list · private to you — the list is stored encrypted.`;
+  }).catch(() => { $(".pp-note").textContent = "Couldn't open the private list on this device (link key missing or wrong)."; });
   return { render };
 }
