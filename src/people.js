@@ -2,7 +2,7 @@
 // inside MINH.md's own store); nothing is ever written to the public site. Name cards Tuệ Minh sends are turned into
 // an import file (JSON / CSV / vCard) that she loads here herself.
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-export const GROUPS = ["Client", "Supplier", "Partner", "Investor", "Team", "Mentor", "Friend", "Family", "Government", "Other"];
+export const GROUPS = ["Business", "Client", "Supplier", "Partner", "Investor", "Team", "Mentor", "Friend", "Family", "Government", "Other"];
 const FIELDS = [
   ["name", "Name", "text", 1], ["title", "Title / role", "text"], ["company", "Company", "text"], ["group", "Group", "group"],
   ["phone", "Phone", "tel"], ["email", "Email", "email"], ["web", "Website", "text"], ["country", "Country", "text"], ["city", "City", "text"],
