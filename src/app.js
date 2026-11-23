@@ -11,6 +11,7 @@ import { mountAnimeRoom, ROOM_SETS } from "./art-motion/anime-room.js";
 import { mountMinh } from "./art-motion/minh-live.js";
 import { mountAges, thumbs, ERAS } from "./art-motion/ages.js";
 import { mountStair, setScale } from "./art-motion/staircase.js";
+import { mountPeople } from "./people.js";
 import { mountMindStory } from "./art-motion/mind-story.js";
 import { mountPhotoStory, HEALTH_PHOTOS, EMOTION_PHOTOS } from "./art-motion/photo-story.js";
 gsap.registerPlugin(ScrollTrigger, CustomEase);
@@ -758,6 +759,7 @@ const CARDS = [
   {g:"— m.", t:"This file will change as I do.", time:T_OUT + 6.4, art:"moon", bg:"#121634"},
   {g:"⌛", t:"Minh through the ages · 18 eras", ages:true, bg:"#1c1a17"},
   {g:"✦", t:"the staircase · where am I today?", stair:true, bg:"#0a1a6a"},
+  {g:"👥", t:"my people · relationships", people:true, bg:"#1c3d24"},
   {g:"✓", t:"today · tick it every night", today:true, bg:"#fc4109"},
   {g:"#", t:"read the .md file", md:true}
 ];
@@ -774,7 +776,7 @@ function openIndex(on){
 }
 $("#pill").onclick = () => openIndex(!document.body.classList.contains("index-open"));
 $("#cards").onclick = e => { const b = e.target.closest(".card"); if(!b) return; const c = CARDS[+b.dataset.i];
-  openIndex(false); if(c.area != null) return area(c.area); if(c.ages) return ages(true); if(c.stair) return stair(true); if(c.today) return today(true); if(c.md) return reading(true); go(c.time, true); };
+  openIndex(false); if(c.area != null) return area(c.area); if(c.ages) return ages(true); if(c.stair) return stair(true); if(c.people) return people(true); if(c.today) return today(true); if(c.md) return reading(true); go(c.time, true); };
 $("#mug").onclick = $("#brand").onclick = () => { openIndex(false); reading(false); go(0, true); };
 
 /* ---------- reading mode: the plain .md ---------- */
@@ -1063,7 +1065,7 @@ $("#area").addEventListener("click", e => {
   }
 });
 addEventListener("keydown", e => { if(AREA < 0) return; if(e.key === "Escape") area(-1); if(e.key === "ArrowRight") area(AREA + 1, "side"); if(e.key === "ArrowLeft") area(AREA - 1, "side"); });
-function fromHash(){ const m = location.hash.match(/^#\/([a-z-]+)/); if(!m) return; if(m[1] === 'ages') return ages(true); if(m[1] === 'scale') return stair(true); const i = A.findIndex(a => slug(a.name) === m[1]); if(i >= 0) area(i); }
+function fromHash(){ const m = location.hash.match(/^#\/([a-z-]+)/); if(!m) return; if(m[1] === 'ages') return ages(true); if(m[1] === 'scale') return stair(true); if(m[1] === 'people') return people(true); const i = A.findIndex(a => slug(a.name) === m[1]); if(i >= 0) area(i); }
 addEventListener("hashchange", fromHash);
 // a pill in the HUD that opens the room you are standing in
 let pillArea = -2;
@@ -1210,3 +1212,13 @@ $("#stGo").onclick = () => stair(true);
 const SCL = mountStair($("#sclStair"), {base: "./", paused: () => document.body.classList.contains("stair-open"),
   onPick: i => { DB.scale[iso(new Date())] = i; LS.set(DB); stair(true); stShow(i, `✓ saved for tonight · ${new Date().toLocaleDateString("en-GB", {day:"numeric", month:"short"})}`); STAIR && STAIR.set(i, true); stChart(); }});
 SCL.set(DB.scale[iso(new Date())] ?? 8, true);
+
+/* ---------- my people: the private relationship book (src/people.js) ---------- */
+let PPL = null;
+function people(on){
+  if(on && !PPL) PPL = mountPeople({DB, save: () => LS.set(DB)});
+  if(on && !PPL.wired){ PPL.wired = true; $("#ppClose").onclick = () => people(false); addEventListener("keydown", e => { if(e.key === "Escape" && document.body.classList.contains("ppl-open") && !$("#ppModal").classList.contains("on")) people(false); }); }
+  document.body.classList.toggle("ppl-open", on);
+  if(on){ watch(false); lenis && lenis.stop(); if(AREA >= 0) area(-1); PPL.render(); if(!location.hash.startsWith("#/people")) history.replaceState(null, "", "#/people"); }
+  else { lenis && lenis.start(); if(location.hash.startsWith("#/people")) history.replaceState(null, "", location.pathname); }
+}
