@@ -11,6 +11,7 @@ import { mountAnimeRoom, ROOM_SETS } from "./art-motion/anime-room.js";
 import { mountMinh } from "./art-motion/minh-live.js";
 import { mountStair, setScale } from "./art-motion/staircase.js";
 import { mountPeople } from "./people.js";
+import { mountBooks } from "./books.js";
 import { mountMindStory } from "./art-motion/mind-story.js";
 import { mountPhotoStory, HEALTH_PHOTOS, EMOTION_PHOTOS } from "./art-motion/photo-story.js";
 gsap.registerPlugin(ScrollTrigger, CustomEase);
@@ -758,6 +759,7 @@ const CARDS = [
   {g:"— m.", t:"This file will change as I do.", time:T_OUT + 6.4, art:"moon", bg:"#121634"},
   {g:"✦", t:"the staircase · where am I today?", stair:true, bg:"#0a1a6a"},
   {g:"👥", t:"my people · relationships", people:true, bg:"#1c3d24"},
+  {g:"📚", t:"my library · books & courses", library:true, bg:"#03314b"},
   {g:"✓", t:"today · tick it every night", today:true, bg:"#fc4109"},
   {g:"#", t:"read the .md file", md:true}
 ];
@@ -774,7 +776,7 @@ function openIndex(on){
 }
 $("#pill").onclick = () => openIndex(!document.body.classList.contains("index-open"));
 $("#cards").onclick = e => { const b = e.target.closest(".card"); if(!b) return; const c = CARDS[+b.dataset.i];
-  openIndex(false); if(c.area != null) return area(c.area); if(c.stair) return stair(true); if(c.people) return people(true); if(c.today) return today(true); if(c.md) return reading(true); go(c.time, true); };
+  openIndex(false); if(c.area != null) return area(c.area); if(c.stair) return stair(true); if(c.people) return people(true); if(c.library) return library(true); if(c.today) return today(true); if(c.md) return reading(true); go(c.time, true); };
 $("#mug").onclick = $("#brand").onclick = () => { openIndex(false); reading(false); go(0, true); };
 
 /* ---------- reading mode: the plain .md ---------- */
@@ -878,6 +880,7 @@ function drawArea(i){
         <p class="tnote">Tap a day to tick it. Streaks count days in a row for daily habits, and weeks that hit the target for the rest. The strip is the last 12 weeks.</p></section>
       ${(a.extras||[]).includes("move") ? moveSection() : ""}
       ${visionStory(a)}
+      ${k === "mind" ? librarySection() : ""}
       ${(a.extras||[]).includes("boards") ? boardSection() : ""}
       ${purposeSection(a)}
       <section class="as"><p class="kick"><b>##</b> strategy — how</p><ol class="st2">${a.strategy.map(([t,d]) => `<li><b>${esc(t)}</b><span>${esc(d)}</span></li>`).join("")}</ol></section>
@@ -1063,7 +1066,7 @@ $("#area").addEventListener("click", e => {
   }
 });
 addEventListener("keydown", e => { if(AREA < 0) return; if(e.key === "Escape") area(-1); if(e.key === "ArrowRight") area(AREA + 1, "side"); if(e.key === "ArrowLeft") area(AREA - 1, "side"); });
-function fromHash(){ const m = location.hash.match(/^#\/([a-z-]+)/); if(!m) return; if(m[1] === 'scale') return stair(true); if(m[1] === 'people') return people(true); const i = A.findIndex(a => slug(a.name) === m[1]); if(i >= 0) area(i); }
+function fromHash(){ const m = location.hash.match(/^#\/([a-z-]+)/); if(!m) return; if(m[1] === 'scale') return stair(true); if(m[1] === 'people') return people(true); if(m[1] === 'library') return library(true); const i = A.findIndex(a => slug(a.name) === m[1]); if(i >= 0) area(i); }
 addEventListener("hashchange", fromHash);
 // a pill in the HUD that opens the room you are standing in
 let pillArea = -2;
@@ -1189,3 +1192,25 @@ function people(on){
   if(on){ watch(false); lenis && lenis.stop(); if(AREA >= 0) area(-1); PPL.render(); if(!location.hash.startsWith("#/people")) history.replaceState(null, "", "#/people"); }
   else { lenis && lenis.start(); if(location.hash.startsWith("#/people")) history.replaceState(null, "", location.pathname); }
 }
+
+/* ---------- my library: books & courses, Blinkist-style (src/books.js) ---------- */
+let LIB = null;
+function library(on, kind){
+  if(on && !LIB){ LIB = mountBooks({DB, save: () => LS.set(DB)}); $("#bkClose").onclick = () => library(false);
+    addEventListener("keydown", e => { if(e.key === "Escape" && document.body.classList.contains("bks-open") && !LIB.anyModal()) library(false); }); }
+  document.body.classList.toggle("bks-open", on);
+  if(on){ watch(false); lenis && lenis.stop(); if(kind) LIB.setKind(kind); else LIB.render(); if(!location.hash.startsWith("#/library")) history.replaceState(null, "", "#/library"); }
+  else { const sh = document.querySelector("#ain .lib"); if(sh) sh.outerHTML = librarySection(); if(AREA < 0){ lenis && lenis.start(); if(location.hash.startsWith("#/library")) history.replaceState(null, "", location.pathname); } }
+}
+// on the Mind page: the shelf — latest books and courses, opening the library
+function librarySection(){
+  const B = (DB.books || []), yr = String(new Date().getFullYear());
+  const shelf = k => B.filter(b => (b.kind || "book") === k).sort((a, b) => (b.finished || b.added || "").localeCompare(a.finished || a.added || "")).slice(0, 8);
+  const cov = b => b.cover ? `<img src="${esc(b.cover)}" alt="">` : `<span class="bk-fake" style="--h:${[...b.title].reduce((h,c)=>(h*31+c.charCodeAt(0))%360,11)}"><b>${esc(b.title)}</b></span>`;
+  const row = (k, label) => { const L = shelf(k); return `<div class="lib-row"><p class="lib-l">${label} <i>${B.filter(b => (b.kind||"book") === k).length}</i></p>
+    <div class="lib-sh">${L.map(b => `<button class="lib-b ${k}" data-lib="${k}">${cov(b)}</button>`).join("") || `<span class="lib-none">nothing yet — add the first one</span>`}<button class="lib-add" data-lib="${k}">+ open</button></div></div>`; };
+  return `<section class="as lib"><p class="kick"><b>##</b> my library — books &amp; courses</p>
+    <p class="lib-goal"><b>${B.filter(b => (b.kind||"book") === "book" && b.status === "finished" && (b.finished||b.added||"").startsWith(yr)).length}</b> / ${DB.bookGoal || 12} books this year · <b>${B.filter(b => b.kind === "course" && b.status === "finished").length}</b> courses completed</p>
+    ${row("book", "Books")}${row("course", "Courses")}</section>`;
+}
+document.addEventListener("click", e => { const b = e.target.closest("[data-lib]"); if(b) library(true, b.dataset.lib); });
